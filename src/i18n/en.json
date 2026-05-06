@@ -1,0 +1,292 @@
+{
+  "app": {
+    "title": "Graham++",
+    "subtitle": "Stocks read through a Graham–Buffett lens",
+    "searchPlaceholder": "AAPL, MRVL, GOOG...",
+    "searchButton": "Analyze",
+    "savedAnalyses": "Saved analyses",
+    "noTheses": "No saved analyses yet. Analyze a stock to get started."
+  },
+  "watchlist": {
+    "title": "Saved analyses",
+    "subtitle": "{{count}} stocks tracked",
+    "subtitleOne": "1 stock tracked",
+    "sinceAnalysis": "since analysis",
+    "thesisLabel": "My thesis",
+    "thesisEmpty": "No thesis written",
+    "thesisPlaceholder": "Write your thesis here...",
+    "updatedToday": "Updated today",
+    "updatedDayAgo": "Updated 1 day ago",
+    "updatedDaysAgo": "Updated {{days}} days ago",
+    "updateAnalysis": "Update analysis",
+    "alerts": {
+      "earnings": "Earnings released since last analysis",
+      "price": "Price moved more than 15% since analysis",
+      "tier": "Key indicator changed tier since analysis"
+    },
+    "empty": {
+      "title": "No saved analyses",
+      "subtitle": "Search a stock to get started"
+    }
+  },
+  "loading": {
+    "title": "Analyzing",
+    "subtitle": "Analyzing two engines...",
+    "step1": "Layer 1 — Pulling raw fundamentals",
+    "step2": "Layer 2 — Indicators & scale positioning",
+    "step3": "Layer 3 — Graham + Market AI engines"
+  },
+  "header": {
+    "range52w": "52-week range",
+    "low": "Low",
+    "high": "High",
+    "todaySuffix": "today",
+    "fcfYield": "FCF Yield",
+    "annualRevenue": "Annual revenue",
+    "marketCap": "Market cap"
+  },
+  "sections": {
+    "indicatorsHeader": "Indicator details",
+    "A": "Growth",
+    "B": "Profitability",
+    "C": "Financial Health",
+    "D": "Valuation",
+    "E": "Moat",
+    "F": "Management"
+  },
+  "indicators": {
+    "A1_revenueGrowth": "Revenue Growth",
+    "A2_epsGrowth": "EPS Growth",
+    "A3_fcfConversion": "FCF Conversion",
+    "A4_ownerEarnings": "Owner Earnings",
+    "B1_grossMargin": "Gross Margin",
+    "B2_operatingMargin": "Operating Margin",
+    "B3_netMargin": "Net Margin",
+    "B4_roic": "ROIC",
+    "B5_roe": "ROE",
+    "C1_debtEquity": "Debt / Equity",
+    "C2_currentRatio": "Current Ratio",
+    "C3_interestCoverage": "Interest Coverage",
+    "C4_netDebtEbitda": "Net Debt / EBITDA",
+    "D1_pe": "P/E (TTM)",
+    "D2_forwardPE": "Forward P/E",
+    "D3_peg": "PEG",
+    "D4_fcfYield": "FCF Yield",
+    "D5_evEbitda": "EV / EBITDA",
+    "D6_priceSales": "P/S",
+    "D7_marginOfSafety": "Margin of Safety",
+    "E1_grossMarginStability": "Gross Margin Stability",
+    "E2_roicMoat": "ROIC (Moat lens)",
+    "F1_roicTrend": "ROIC Trend",
+    "F2_fcfConversionTrend": "FCF Conversion Trend"
+  },
+  "indicatorDesc": {
+    "A1_revenueGrowth": "Year-over-year revenue growth rate",
+    "A2_epsGrowth": "Year-over-year earnings per share growth",
+    "A3_fcfConversion": "How much of the profit converts to real cash",
+    "A4_ownerEarnings": "Cash the owner can extract without harming the business",
+    "B1_grossMargin": "How much remains from each revenue dollar after production costs",
+    "B2_operatingMargin": "Operating efficiency — profit after all running costs",
+    "B3_netMargin": "Final profit from each revenue dollar",
+    "B4_roic": "How much each invested dollar earns inside the business",
+    "B5_roe": "How much each dollar of equity earns",
+    "C1_debtEquity": "Debt financing relative to equity",
+    "C2_currentRatio": "Ability to meet short-term obligations",
+    "C3_interestCoverage": "How many times profit covers interest payments",
+    "C4_netDebtEbitda": "Years of operating profit needed to repay debt",
+    "D1_pe": "Price the market pays for each dollar of profit",
+    "D2_forwardPE": "P/E based on next year's expected earnings",
+    "D3_peg": "P/E relative to the growth rate",
+    "D4_fcfYield": "Cash the business generates relative to its market value",
+    "D5_evEbitda": "Total enterprise value relative to operating profit",
+    "D6_priceSales": "Price relative to revenue",
+    "D7_marginOfSafety": "Gap between current price and estimated intrinsic value",
+    "E1_grossMarginStability": "Gross margin stability over time",
+    "E2_roicMoat": "ROIC as confirmation of a competitive advantage",
+    "F1_roicTrend": "Direction of change in return on invested capital",
+    "F2_fcfConversionTrend": "Direction of change in profit-to-cash quality"
+  },
+  "scaleLabels": {
+    "danger": "Danger",
+    "weak": "Weak",
+    "acceptable": "Acceptable",
+    "strong": "Strong",
+    "exceptional": "Exceptional"
+  },
+  "indicatorRow": {
+    "expand": "Read interpretation ↓",
+    "collapse": "Close ↑"
+  },
+  "tier": {
+    "exceptional": "Exceptional",
+    "strong": "Strong",
+    "acceptable": "Acceptable",
+    "weak": "Weak",
+    "danger": "Danger",
+    "deep_value": "Deep value",
+    "undervalued": "Undervalued",
+    "fair": "Fair",
+    "premium": "Premium",
+    "speculative": "Speculative",
+    "attractive": "Attractive",
+    "expensive": "Expensive",
+    "moderate": "Moderate",
+    "minimal": "Minimal",
+    "none": "None"
+  },
+  "aiSection": {
+    "grahamNarrative": "Graham narrative",
+    "signalsHeader": "Key points",
+    "positiveSignals": "Standing out positively",
+    "challengingSignals": "Standing out negatively",
+    "questions": "Questions to consider",
+    "unavailable": "AI interpretation is currently unavailable.",
+    "unavailableShort": "Unavailable",
+    "loading": "Loading...",
+    "translating": "Translating..."
+  },
+  "accordion": {
+    "reasons": "Full reasoning",
+    "data": "Full data"
+  },
+  "reality": {
+    "fragility": {
+      "robust": "Robust",
+      "moderate": "Caveats",
+      "fragile": "Fragile",
+      "unstable": "Unstable"
+    },
+    "counterShort": "Counter",
+    "blockedShort": "Blocked",
+    "counterHeader": "Internal counter-thesis",
+    "counterIfThen": "Scenario that breaks the thesis",
+    "killSwitchesHeader": "Conditions that would invalidate the thesis",
+    "findingsHeader": "Fragility evidence",
+    "tailwindsHeader": "Supportive context",
+    "dim": {
+      "cyclicality": "Cyclicality",
+      "commodity_exposure": "Commodity exposure",
+      "regulatory": "Regulatory dependence",
+      "narrative_dependence": "Narrative dependence",
+      "peak_earnings": "Peak earnings",
+      "one_factor_thesis": "Single-factor thesis",
+      "accounting_quality": "Accounting quality",
+      "liquidity_or_solvency": "Liquidity / solvency",
+      "macro_sensitivity": "Macro sensitivity",
+      "data_freshness": "Data freshness",
+      "growth_sustainability": "Growth sustainability",
+      "margin_durability": "Margin durability",
+      "cyclical_bottom": "Cyclical trough",
+      "de_leveraging": "De-leveraging",
+      "margin_inflection": "Margin inflection",
+      "capex_investment_phase": "Investment phase",
+      "payout_discipline": "Capital discipline"
+    }
+  },
+  "plain": {
+    "header": "In plain words"
+  },
+  "dualEngine": {
+    "engineNames": {
+      "graham": "Graham++",
+      "market": "Market"
+    },
+    "decision": {
+      "BUY": "BUY",
+      "WAIT": "WAIT",
+      "AVOID": "AVOID"
+    },
+    "confidence": {
+      "Low": "Low confidence",
+      "Medium": "Medium confidence",
+      "High": "High confidence"
+    },
+    "setup": {
+      "rare_value": "Rare Setup",
+      "consensus_buy": "Consensus",
+      "market_leading": "Market Led",
+      "consensus_avoid": "Avoid",
+      "neutral": ""
+    },
+    "trigger": "Trigger",
+    "entryZone": "Entry zone",
+    "whyHeader": "Why",
+    "risksHeader": "Risks",
+    "suggestedAction": "Suggested action",
+    "ctaTaken": "Added to watchlist ✓",
+    "loading": "Analyzing two engines..."
+  },
+  "verdict": {
+    "labels": {
+      "interesting": "Interesting — worth further research",
+      "waiting": "Waiting — more information needed",
+      "pass": "Does not meet criteria"
+    },
+    "missingLabel": "What's missing:"
+  },
+  "summary": {
+    "indicatorInsight": "AI insight",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
+  "context": {
+    "moat": "Moat",
+    "problem": "Current situation",
+    "catalyst": "Trigger",
+    "catalystPresent": "Present",
+    "catalystAbsent": "Not identified",
+    "catalystNone": "No clear trigger identified in the visible horizon",
+    "nextEarnings": "Next earnings",
+    "nextEarningsSub": "Recommended checkpoint to revisit the analysis",
+    "unknown": "Unknown",
+    "moatSub": {
+      "above": "ROIC {{value}}% — above the 15% threshold confirming a moat",
+      "between": "ROIC {{value}}% — below the 15% threshold for a wide moat",
+      "below": "ROIC {{value}}% — materially below the 15% threshold",
+      "unknown": "ROIC unavailable to confirm moat"
+    }
+  },
+  "moatTypeText": {
+    "SwitchingCosts": "High switching costs for customers",
+    "NetworkEffects": "Network effect — each user adds value",
+    "CostAdvantage": "Structural cost advantage",
+    "Intangibles": "Brand / patents / licenses",
+    "Scale": "Scale and operating advantage",
+    "None": "No clear competitive advantage identified"
+  },
+  "moatRatings": {
+    "Wide": "Wide",
+    "Narrow": "Narrow",
+    "None": "None"
+  },
+  "problemTypes": {
+    "Temporary": "Temporary",
+    "Structural": "Structural",
+    "Mixed": "Mixed",
+    "None": "Not identified"
+  },
+  "problemDefault": {
+    "Temporary": "A temporary situation affecting current performance",
+    "Structural": "A structural shift in the business",
+    "Mixed": "A mix of temporary and structural factors",
+    "None": "No notable issue in the data"
+  },
+  "problemSub": {
+    "Temporary": "Not a structural shift — same business, same market",
+    "Structural": "Structural shift — requires reassessing the business",
+    "Mixed": "Combination of temporary and structural factors",
+    "None": ""
+  },
+  "actions": {
+    "saveThesis": "Save analysis",
+    "saved": "Saved",
+    "back": "Back",
+    "remove": "Remove",
+    "analyzing": "Analyzing..."
+  },
+  "errors": {
+    "tickerNotFound": "Ticker not found. Please check and try again.",
+    "networkError": "Network error. Please try again.",
+    "generic": "Something went wrong. Please try again."
+  }
+}

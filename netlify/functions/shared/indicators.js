@@ -1,0 +1,303 @@
+'use strict';
+
+const { computeTierAndPosition } = require('./scalePosition');
+
+const TAX_RATE = 0.21;
+const MAINT_CAPEX_PORTION = 0.6;
+const DCF_DISCOUNT_RATE = 0.10;
+const DCF_EXIT_MULTIPLE = 15;
+const DCF_YEARS = 3;
+const GRAHAM_BASE = 8.5;
+
+function safeDiv(num, den) {
+  if (den == null || !Number.isFinite(den) || den === 0) return null;
+  if (num == null || !Number.isFinite(num)) return null;
+  return num / den;
+}
+
+function fcfFromOcfCapex(ocf, capex) {
+  // Yahoo's capitalExpenditure is signed negative — adding produces FCF.
+  if (!Number.isFinite(ocf)) return null;
+  return ocf + (Number.isFinite(capex) ? capex : 0);
+}
+
+function pctSeries(arr, denomArr) {
+  return arr.map((v, i) => {
+    const d = denomArr[i];
+    if (!Number.isFinite(v) || !Number.isFinite(d) || d === 0) return null;
+    return (v / d) * 100;
+  });
+}
+
+function yoySeries(arr) {
+  return arr.map((v, i) => {
+    if (i === 0) return null;
+    const prev = arr[i - 1];
+    if (!Number.isFinite(v) || !Number.isFinite(prev) || prev === 0) return null;
+    return ((v - prev) / Math.abs(prev)) * 100;
+  });
+}
+
+function lastFinite(arr) {
+  for (let i = arr.length - 1; i >= 0; i -= 1) {
+    if (Number.isFinite(arr[i])) return arr[i];
+  }
+  return null;
+}
+
+function stdDev(values) {
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (finite.length < 2) return null;
+  const mean = finite.reduce((a, b) => a + b, 0) / finite.length;
+  const variance =
+    finite.reduce((acc, v) => acc + (v - mean) * (v - mean), 0) / finite.length;
+  return Math.sqrt(variance);
+}
+
+function buildSeries(key, category, values) {
+  const latestValue = lastFinite(values);
+  const { tier, position } =
+    latestValue == null
+      ? { tier: null, position: null }
+      : computeTierAndPosition(key, latestValue);
+  return {
+    key,
+    category,
+    values: values.map((v) => (Number.isFinite(v) ? v : null)),
+    latestValue,
+    latestTier: tier,
+    latestPosition: position,
+  };
+}
+
+function buildScalar(key, category, value) {
+  if (value == null || !Number.isFinite(value)) {
+    return { key, category, value: null, tier: null, position: null };
+  }
+  const { tier, position } = computeTierAndPosition(key, value);
+  return { key, category, value, tier, position };
+}
+
+/**
+ * Compute the full Layer 2 indicator object from raw fundamentals.
+ * `raw` should match the shape produced by analyze.js fetchFundamentals.
+ */
+function computeIndicators(raw) {
+  const {
+    revenues = [],
+    operatingIncomes = [],
+    netIncomes = [],
+    operatingCashFlows = [],
+    capexArr = [],
+    ebits = [],
+    interestExpenses = [],
+    grossProfits = [],
+    depreciationAmortization = [],
+    totalDebt = 0,
+    totalEquity = 0,
+    cash = 0,
+    currentAssets = 0,
+    currentLiabilities = 0,
+    ebitda = null,
+    marketCap = null,
+    sharesOutstanding = null,
+    currentPrice = null,
+    peRatio = null,
+    forwardPE = null,
+    pegRatio = null,
+    priceSales = null,
+    forwardEPS = null,
+    longTermGrowthRate = null,
+  } = raw;
+
+  // Per-year FCF
+  const fcfArr = operatingCashFlows.map((ocf, i) => fcfFromOcfCapex(ocf, capexArr[i]));
+
+  // Per-year FCF conversion (FCF / NetIncome)
+  const fcfConversions = fcfArr.map((fcf, i) => {
+    const ni = netIncomes[i];
+    if (!Number.isFinite(fcf) || !Number.isFinite(ni) || ni === 0) return null;
+    return fcf / ni;
+  });
+
+  // EPS proxy series: net income / current shares outstanding (shares snapshot).
+  const epsArr = sharesOutstanding
+    ? netIncomes.map((ni) => (Number.isFinite(ni) ? ni / sharesOutstanding : null))
+    : netIncomes.map(() => null);
+
+  // ── A. Growth ──
+  const A1 = buildSeries('A1_revenueGrowth', 'A', yoySeries(revenues));
+  const A2 = buildSeries('A2_epsGrowth', 'A', yoySeries(epsArr));
+
+  const latestFcf = lastFinite(fcfArr);
+  const latestNi = lastFinite(netIncomes);
+  const fcfConvLatest = safeDiv(latestFcf, latestNi);
+  const A3 = buildScalar('A3_fcfConversion', 'A', fcfConvLatest);
+
+  const latestDA = lastFinite(depreciationAmortization);
+  const latestCapex = lastFinite(capexArr);
+  // Maintenance CapEx ≈ 60% of total CapEx (capex is negative on Yahoo).
+  const maintCapex = Number.isFinite(latestCapex) ? latestCapex * MAINT_CAPEX_PORTION : 0;
+  const ownerEarnings = Number.isFinite(latestNi)
+    ? latestNi + (Number.isFinite(latestDA) ? latestDA : 0) + maintCapex
+    : null;
+  const ownerEarningsRatio = safeDiv(ownerEarnings, latestNi);
+  const A4 = buildScalar('A4_ownerEarnings', 'A', ownerEarningsRatio);
+
+  // ── B. Profitability ──
+  const grossMarginsCalc = (grossProfits.length === revenues.length)
+    ? pctSeries(grossProfits, revenues)
+    : revenues.map(() => null);
+  const operatingMargins = pctSeries(operatingIncomes, revenues);
+  const netMargins = pctSeries(netIncomes, revenues);
+
+  const B1 = buildSeries('B1_grossMargin', 'B', grossMarginsCalc);
+  const B2 = buildSeries('B2_operatingMargin', 'B', operatingMargins);
+  const B3 = buildSeries('B3_netMargin', 'B', netMargins);
+
+  const latestEbit = lastFinite(ebits);
+  const investedCapital = (totalEquity || 0) + (totalDebt || 0) - (cash || 0);
+  const roic = (Number.isFinite(latestEbit) && investedCapital > 0)
+    ? (latestEbit * (1 - TAX_RATE) / investedCapital) * 100
+    : null;
+  const B4 = buildScalar('B4_roic', 'B', roic);
+
+  const roe = (Number.isFinite(latestNi) && totalEquity > 0)
+    ? (latestNi / totalEquity) * 100
+    : null;
+  const B5 = buildScalar('B5_roe', 'B', roe);
+
+  // ── C. Financial Health ──
+  const debtEquity = safeDiv(totalDebt, totalEquity);
+  const C1 = buildScalar('C1_debtEquity', 'C', debtEquity);
+
+  const currentRatio = safeDiv(currentAssets, currentLiabilities);
+  const C2 = buildScalar('C2_currentRatio', 'C', currentRatio);
+
+  const latestInterest = lastFinite(interestExpenses);
+  const interestCoverage = (Number.isFinite(latestEbit) && Number.isFinite(latestInterest) && latestInterest !== 0)
+    ? latestEbit / Math.abs(latestInterest)
+    : null;
+  const C3 = buildScalar('C3_interestCoverage', 'C', interestCoverage);
+
+  const netDebt = (totalDebt || 0) - (cash || 0);
+  const netDebtEbitda = (Number.isFinite(ebitda) && ebitda > 0) ? netDebt / ebitda : null;
+  const C4 = buildScalar('C4_netDebtEbitda', 'C', netDebtEbitda);
+
+  // ── D. Valuation ──
+  const D1 = buildScalar('D1_pe', 'D', peRatio);
+  const D2 = buildScalar('D2_forwardPE', 'D', forwardPE);
+  const D3 = buildScalar('D3_peg', 'D', pegRatio);
+
+  const fcfYield = (Number.isFinite(latestFcf) && Number.isFinite(marketCap) && marketCap > 0)
+    ? (latestFcf / marketCap) * 100
+    : null;
+  const D4 = buildScalar('D4_fcfYield', 'D', fcfYield);
+
+  const ev = (Number.isFinite(marketCap) ? marketCap : 0) + (totalDebt || 0) - (cash || 0);
+  const evEbitda = (ev > 0 && Number.isFinite(ebitda) && ebitda > 0) ? ev / ebitda : null;
+  const D5 = buildScalar('D5_evEbitda', 'D', evEbitda);
+
+  const D6 = buildScalar('D6_priceSales', 'D', priceSales);
+
+  // Intrinsic value
+  const ltg = Number.isFinite(longTermGrowthRate) ? longTermGrowthRate : null;
+  const grahamIntrinsic = (Number.isFinite(forwardEPS) && forwardEPS > 0 && ltg != null)
+    ? forwardEPS * (ltg + GRAHAM_BASE)
+    : null;
+
+  const dcfIntrinsic = (Number.isFinite(latestFcf) && latestFcf > 0 &&
+                       Number.isFinite(sharesOutstanding) && sharesOutstanding > 0 && ltg != null)
+    ? (() => {
+        const g = ltg / 100;
+        const projected = latestFcf * Math.pow(1 + g, DCF_YEARS);
+        return (projected * DCF_EXIT_MULTIPLE) / Math.pow(1 + DCF_DISCOUNT_RATE, DCF_YEARS) / sharesOutstanding;
+      })()
+    : null;
+
+  const validIvs = [grahamIntrinsic, dcfIntrinsic].filter((v) => Number.isFinite(v) && v > 0);
+  const intrinsicAvg = validIvs.length > 0
+    ? validIvs.reduce((a, b) => a + b, 0) / validIvs.length
+    : null;
+
+  const marginOfSafety = (Number.isFinite(intrinsicAvg) && intrinsicAvg > 0 && Number.isFinite(currentPrice))
+    ? ((intrinsicAvg - currentPrice) / intrinsicAvg) * 100
+    : null;
+  const D7 = buildScalar('D7_marginOfSafety', 'D', marginOfSafety);
+
+  // ── E. Moat ──
+  const E1 = buildScalar(
+    'E1_grossMarginStability',
+    'E',
+    stdDev(grossMarginsCalc),
+  );
+  // Reuse ROIC for the moat lens.
+  const E2 = buildScalar('E2_roicMoat', 'E', roic);
+
+  // ── F. Management ──
+  // Approximate ROIC trend: compare latest year vs 3 years prior using
+  // operatingIncome*(1-tax) / latest investedCapital (held constant — best proxy
+  // available without per-year invested capital). Then divide by years.
+  const F1 = (() => {
+    if (investedCapital <= 0) return buildScalar('F1_roicTrend', 'F', null);
+    const opIncomeFinite = operatingIncomes.filter(Number.isFinite);
+    if (opIncomeFinite.length < 2) return buildScalar('F1_roicTrend', 'F', null);
+    const latest = opIncomeFinite[opIncomeFinite.length - 1];
+    const idx = Math.max(0, opIncomeFinite.length - 4);
+    const baseline = opIncomeFinite[idx];
+    const yearsSpan = (opIncomeFinite.length - 1 - idx) || 1;
+    const latestRoicPp = (latest * (1 - TAX_RATE) / investedCapital) * 100;
+    const baseRoicPp = (baseline * (1 - TAX_RATE) / investedCapital) * 100;
+    const trendPpPerYear = (latestRoicPp - baseRoicPp) / yearsSpan;
+    return buildScalar('F1_roicTrend', 'F', trendPpPerYear);
+  })();
+
+  const F2 = (() => {
+    const recent = fcfConversions.slice(-3).filter((v) => Number.isFinite(v));
+    if (recent.length === 0) return buildScalar('F2_fcfConversionTrend', 'F', null);
+    const avg = recent.reduce((a, b) => a + b, 0) / recent.length;
+    return buildScalar('F2_fcfConversionTrend', 'F', avg);
+  })();
+
+  const indicators = {
+    A1_revenueGrowth: A1,
+    A2_epsGrowth: A2,
+    A3_fcfConversion: A3,
+    A4_ownerEarnings: A4,
+    B1_grossMargin: B1,
+    B2_operatingMargin: B2,
+    B3_netMargin: B3,
+    B4_roic: B4,
+    B5_roe: B5,
+    C1_debtEquity: C1,
+    C2_currentRatio: C2,
+    C3_interestCoverage: C3,
+    C4_netDebtEbitda: C4,
+    D1_pe: D1,
+    D2_forwardPE: D2,
+    D3_peg: D3,
+    D4_fcfYield: D4,
+    D5_evEbitda: D5,
+    D6_priceSales: D6,
+    D7_marginOfSafety: D7,
+    E1_grossMarginStability: E1,
+    E2_roicMoat: E2,
+    F1_roicTrend: F1,
+    F2_fcfConversionTrend: F2,
+  };
+
+  return {
+    indicators,
+    intrinsicValue: {
+      graham: grahamIntrinsic != null ? +grahamIntrinsic.toFixed(2) : null,
+      dcf: dcfIntrinsic != null ? +dcfIntrinsic.toFixed(2) : null,
+      average: intrinsicAvg != null ? +intrinsicAvg.toFixed(2) : null,
+    },
+    fcfArr,
+    fcfConversions,
+  };
+}
+
+module.exports = {
+  computeIndicators,
+};

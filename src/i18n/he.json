@@ -1,0 +1,292 @@
+{
+  "app": {
+    "title": "Graham++",
+    "subtitle": "ניתוח מניות בשפה של גרהאם–באפט",
+    "searchPlaceholder": "AAPL, MRVL, GOOG...",
+    "searchButton": "נתח",
+    "savedAnalyses": "ניתוחים שמורים",
+    "noTheses": "אין ניתוחים שמורים. נתח מניה כדי להתחיל."
+  },
+  "watchlist": {
+    "title": "ניתוחים שמורים",
+    "subtitle": "{{count}} מניות במעקב",
+    "subtitleOne": "מניה אחת במעקב",
+    "sinceAnalysis": "מאז הניתוח",
+    "thesisLabel": "התזה שלי",
+    "thesisEmpty": "לא נכתבה תזה",
+    "thesisPlaceholder": "כתוב כאן את התזה שלך...",
+    "updatedToday": "עודכן היום",
+    "updatedDayAgo": "עודכן אתמול",
+    "updatedDaysAgo": "עודכן לפני {{days}} ימים",
+    "updateAnalysis": "עדכן ניתוח",
+    "alerts": {
+      "earnings": "דוח רווחים יצא מאז הניתוח האחרון",
+      "price": "המחיר השתנה ביותר מ-15% מאז הניתוח",
+      "tier": "אינדיקטור מפתח עבר תחום מאז הניתוח"
+    },
+    "empty": {
+      "title": "אין ניתוחים שמורים",
+      "subtitle": "חפש מניה כדי להתחיל"
+    }
+  },
+  "loading": {
+    "title": "מנתח",
+    "subtitle": "מנתח שני מנועים...",
+    "step1": "שכבה 1 — שליפת נתוני יסוד",
+    "step2": "שכבה 2 — חישוב מדדים ומיקום בסולם",
+    "step3": "שכבה 3 — שני מנועי AI במקביל"
+  },
+  "header": {
+    "range52w": "טווח 52 שבועות",
+    "low": "שפל",
+    "high": "שיא",
+    "todaySuffix": "היום",
+    "fcfYield": "תשואת FCF",
+    "annualRevenue": "הכנסות שנתיות",
+    "marketCap": "שווי שוק"
+  },
+  "sections": {
+    "indicatorsHeader": "פירוט מדדים",
+    "A": "צמיחה",
+    "B": "רווחיות",
+    "C": "בריאות פיננסית",
+    "D": "תמחור",
+    "E": "יתרון תחרותי",
+    "F": "ניהול"
+  },
+  "indicators": {
+    "A1_revenueGrowth": "צמיחת הכנסות",
+    "A2_epsGrowth": "צמיחת EPS",
+    "A3_fcfConversion": "המרת FCF",
+    "A4_ownerEarnings": "Owner Earnings",
+    "B1_grossMargin": "מרווח גולמי",
+    "B2_operatingMargin": "מרווח תפעולי",
+    "B3_netMargin": "מרווח נקי",
+    "B4_roic": "ROIC",
+    "B5_roe": "ROE",
+    "C1_debtEquity": "חוב / הון",
+    "C2_currentRatio": "יחס שוטף",
+    "C3_interestCoverage": "כיסוי ריבית",
+    "C4_netDebtEbitda": "חוב נטו / EBITDA",
+    "D1_pe": "מכפיל רווח (TTM)",
+    "D2_forwardPE": "מכפיל רווח עתידי",
+    "D3_peg": "PEG",
+    "D4_fcfYield": "תשואת FCF",
+    "D5_evEbitda": "EV / EBITDA",
+    "D6_priceSales": "מכפיל מכירות",
+    "D7_marginOfSafety": "מרווח בטחון",
+    "E1_grossMarginStability": "יציבות מרווח גולמי",
+    "E2_roicMoat": "ROIC (אישוש Moat)",
+    "F1_roicTrend": "מגמת ROIC",
+    "F2_fcfConversionTrend": "מגמת המרת FCF"
+  },
+  "indicatorDesc": {
+    "A1_revenueGrowth": "קצב גדילת ההכנסות שנה על שנה",
+    "A2_epsGrowth": "קצב גדילת הרווח למניה",
+    "A3_fcfConversion": "כמה מהרווח הופך למזומן אמיתי",
+    "A4_ownerEarnings": "המזומן שהבעלים יכול למשוך מבלי לפגוע בעסק",
+    "B1_grossMargin": "כמה נשאר מכל שקל הכנסה לאחר עלויות ייצור",
+    "B2_operatingMargin": "יעילות התפעול — רווח לאחר כל עלויות ההפעלה",
+    "B3_netMargin": "הרווח הסופי מכל שקל הכנסה",
+    "B4_roic": "כמה מרוויח כל שקל מושקע בעסק",
+    "B5_roe": "כמה מרוויח כל שקל של הון עצמי",
+    "C1_debtEquity": "יחס המימון בחוב מול הון עצמי",
+    "C2_currentRatio": "יכולת לעמוד בהתחייבויות קצרות טווח",
+    "C3_interestCoverage": "כמה פעמים הרווח מכסה את תשלומי הריבית",
+    "C4_netDebtEbitda": "כמה שנות רווח דרושות לפירעון החוב",
+    "D1_pe": "כמה משלם השוק על כל שקל רווח",
+    "D2_forwardPE": "מכפיל רווח על בסיס תחזיות השנה הבאה",
+    "D3_peg": "מכפיל הרווח ביחס לקצב הצמיחה",
+    "D4_fcfYield": "כמה מזומן מייצר העסק ביחס לשווי השוק שלו",
+    "D5_evEbitda": "שווי כולל של העסק ביחס לרווח התפעולי",
+    "D6_priceSales": "מכפיל המכירות — מחיר ביחס להכנסות",
+    "D7_marginOfSafety": "הפרש בין המחיר הנוכחי לערך הפנימי המוערך",
+    "E1_grossMarginStability": "יציבות המרווח הגולמי לאורך זמן",
+    "E2_roicMoat": "ROIC כאישוש לקיומו של יתרון תחרותי",
+    "F1_roicTrend": "כיוון השינוי בתשואה על ההון המושקע",
+    "F2_fcfConversionTrend": "כיוון השינוי באיכות המרת הרווח למזומן"
+  },
+  "scaleLabels": {
+    "danger": "סכנה",
+    "weak": "חלש",
+    "acceptable": "סביר",
+    "strong": "חזק",
+    "exceptional": "יוצא דופן"
+  },
+  "indicatorRow": {
+    "expand": "קרא פרשנות ↓",
+    "collapse": "סגור ↑"
+  },
+  "tier": {
+    "exceptional": "יוצא דופן",
+    "strong": "חזק",
+    "acceptable": "סביר",
+    "weak": "חלש",
+    "danger": "סכנה",
+    "deep_value": "ערך עמוק",
+    "undervalued": "נסחר בחסר",
+    "fair": "הוגן",
+    "premium": "פרמיום",
+    "speculative": "ספקולטיבי",
+    "attractive": "אטרקטיבי",
+    "expensive": "יקר",
+    "moderate": "בינוני",
+    "minimal": "מינימלי",
+    "none": "ללא"
+  },
+  "aiSection": {
+    "grahamNarrative": "ניתוח גרהמי",
+    "signalsHeader": "נקודות מפתח",
+    "positiveSignals": "בולט לחיוב",
+    "challengingSignals": "בולט לשלילה",
+    "questions": "שאלות לחשיבה",
+    "unavailable": "פרשנות ה-AI אינה זמינה כרגע.",
+    "unavailableShort": "אינו זמין",
+    "loading": "טוען...",
+    "translating": "מתרגם..."
+  },
+  "accordion": {
+    "reasons": "הנימוקים המלאים",
+    "data": "נתונים מלאים"
+  },
+  "reality": {
+    "fragility": {
+      "robust": "יציב",
+      "moderate": "הסתייגויות",
+      "fragile": "שברירי",
+      "unstable": "לא יציב"
+    },
+    "counterShort": "נגד",
+    "blockedShort": "חסום",
+    "counterHeader": "טיעון נגדי פנימי",
+    "counterIfThen": "תרחיש שמפיל את התזה",
+    "killSwitchesHeader": "תנאים שיבטלו את התזה",
+    "findingsHeader": "ראיות שבריריות",
+    "tailwindsHeader": "גורמים תומכים",
+    "dim": {
+      "cyclicality": "מחזוריות",
+      "commodity_exposure": "חשיפה לסחורות",
+      "regulatory": "תלות רגולטורית",
+      "narrative_dependence": "תלות בנרטיב",
+      "peak_earnings": "רווחי שיא",
+      "one_factor_thesis": "תזה מונע גורם יחיד",
+      "accounting_quality": "איכות חשבונאית",
+      "liquidity_or_solvency": "נזילות / כושר פרעון",
+      "macro_sensitivity": "רגישות מאקרו",
+      "data_freshness": "טריות הנתונים",
+      "growth_sustainability": "קיימות הצמיחה",
+      "margin_durability": "יציבות המרווחים",
+      "cyclical_bottom": "תחתית מחזור",
+      "de_leveraging": "הפחתת מינוף",
+      "margin_inflection": "הפיכת מרווחים",
+      "capex_investment_phase": "שלב השקעה",
+      "payout_discipline": "משמעת תגמול"
+    }
+  },
+  "plain": {
+    "header": "בשפה פשוטה"
+  },
+  "dualEngine": {
+    "engineNames": {
+      "graham": "Graham++",
+      "market": "Market"
+    },
+    "decision": {
+      "BUY": "BUY",
+      "WAIT": "WAIT",
+      "AVOID": "AVOID"
+    },
+    "confidence": {
+      "Low": "ביטחון נמוך",
+      "Medium": "ביטחון בינוני",
+      "High": "ביטחון גבוה"
+    },
+    "setup": {
+      "rare_value": "Rare Setup",
+      "consensus_buy": "Consensus",
+      "market_leading": "Market Led",
+      "consensus_avoid": "Avoid",
+      "neutral": ""
+    },
+    "trigger": "טריגר",
+    "entryZone": "אזור כניסה",
+    "whyHeader": "למה",
+    "risksHeader": "סיכונים",
+    "suggestedAction": "הפעולה המומלצת",
+    "ctaTaken": "נוסף ל-Watchlist ✓",
+    "loading": "מנתח שני מנועים..."
+  },
+  "verdict": {
+    "labels": {
+      "interesting": "מעניין לחקירה נוספת",
+      "waiting": "ממתין — נדרש מידע נוסף",
+      "pass": "לא עומד בקריטריונים"
+    },
+    "missingLabel": "מה חסר:"
+  },
+  "summary": {
+    "indicatorInsight": "פרשנות AI",
+    "expand": "הרחב",
+    "collapse": "צמצם"
+  },
+  "context": {
+    "moat": "יתרון תחרותי",
+    "problem": "הבעיה הנוכחית",
+    "catalyst": "טריגר",
+    "catalystPresent": "קיים",
+    "catalystAbsent": "לא זוהה",
+    "catalystNone": "לא זוהה טריגר ברור בטווח הנראה לעין",
+    "nextEarnings": "דוח רווחים הבא",
+    "nextEarningsSub": "נקודת בדיקה מומלצת לעדכון הניתוח",
+    "unknown": "לא ידוע",
+    "moatSub": {
+      "above": "ROIC {{value}}% — מעל סף 15% המאמת יתרון תחרותי",
+      "between": "ROIC {{value}}% — מתחת לסף 15% המאמת Moat רחב",
+      "below": "ROIC {{value}}% — נמוך משמעותית מסף 15%",
+      "unknown": "ROIC לא זמין לאימות יתרון תחרותי"
+    }
+  },
+  "moatTypeText": {
+    "SwitchingCosts": "עלויות מעבר גבוהות ללקוחות",
+    "NetworkEffects": "אפקט רשת — כל משתמש מוסיף ערך",
+    "CostAdvantage": "יתרון עלויות מבני",
+    "Intangibles": "מותג / פטנטים / רישיונות",
+    "Scale": "יתרון סקייל ותפעול",
+    "None": "לא זוהה יתרון תחרותי ברור"
+  },
+  "moatRatings": {
+    "Wide": "רחב",
+    "Narrow": "צר",
+    "None": "ללא"
+  },
+  "problemTypes": {
+    "Temporary": "זמנית",
+    "Structural": "מבנית",
+    "Mixed": "מעורבת",
+    "None": "לא זוהתה"
+  },
+  "problemDefault": {
+    "Temporary": "מצב זמני שמשפיע על הביצועים הנוכחיים",
+    "Structural": "שינוי מבני בעסק",
+    "Mixed": "שילוב של גורמים זמניים ומבניים",
+    "None": "אין בעיה בולטת בנתונים"
+  },
+  "problemSub": {
+    "Temporary": "לא שינוי מבני — אותו עסק, אותו שוק",
+    "Structural": "שינוי מבני — דורש הערכה מחדש של העסק",
+    "Mixed": "שילוב של גורמים זמניים ומבניים",
+    "None": ""
+  },
+  "actions": {
+    "saveThesis": "שמור ניתוח",
+    "saved": "נשמר",
+    "back": "חזרה",
+    "remove": "מחק",
+    "analyzing": "מנתח..."
+  },
+  "errors": {
+    "tickerNotFound": "טיקר לא נמצא. בדוק ונסה שנית.",
+    "networkError": "שגיאת רשת. נסה שנית.",
+    "generic": "משהו השתבש. נסה שנית."
+  }
+}
