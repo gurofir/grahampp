@@ -54,6 +54,14 @@
     "E": "Moat",
     "F": "Management"
   },
+  "sectionDesc": {
+    "A": "Is the business growing — and how fast?",
+    "B": "Does the growth turn into real profit?",
+    "C": "How well can the business absorb stress?",
+    "D": "Is the price fair for what you get?",
+    "E": "Will the profitability persist over time?",
+    "F": "Where is management taking the business — forward or back?"
+  },
   "indicators": {
     "A1_revenueGrowth": "Revenue Growth",
     "A2_epsGrowth": "EPS Growth",
@@ -147,7 +155,7 @@
   },
   "accordion": {
     "reasons": "Full reasoning",
-    "data": "Full data"
+    "data": "Financial indicators"
   },
   "reality": {
     "fragility": {

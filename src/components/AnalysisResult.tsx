@@ -45,7 +45,8 @@ export default function AnalysisResult({
 
   const dataSubItems: AccordionItemDef[] = indicatorSections.map((section) => ({
     id: section.id,
-    title: `${section.id} — ${t(`sections.${section.id}`)}`,
+    title: t(`sections.${section.id}`),
+    subtitle: t(`sectionDesc.${section.id}`, ''),
     headerExtra: <ColorStrip indicators={section.rows} />,
     body: <IndicatorRows indicators={section.rows} insights={indicatorInsights} />,
   }))

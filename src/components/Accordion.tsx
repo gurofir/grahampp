@@ -3,6 +3,7 @@ import { useRef, useState, type ReactNode } from 'react'
 export interface AccordionItemDef {
   id: string
   title: string
+  subtitle?: string
   headerExtra?: ReactNode
   body: ReactNode
   disabled?: boolean
@@ -110,11 +111,25 @@ function AccordionItem({
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
-        <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
           <span className="text-[13px] font-medium text-gray-900 truncate">
             {item.title}
           </span>
-          {item.headerExtra ? <div>{item.headerExtra}</div> : null}
+          {item.subtitle ? (
+            <span
+              className="text-[11px] text-gray-500 leading-snug"
+              dir="auto"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {item.subtitle}
+            </span>
+          ) : null}
+          {item.headerExtra ? <div className="mt-0.5">{item.headerExtra}</div> : null}
         </div>
         <span className="flex items-center gap-2 shrink-0">
           {item.statusLabel ? (
