@@ -221,6 +221,9 @@
     "whyHeader": "Why",
     "risksHeader": "Risks",
     "suggestedAction": "Suggested action",
+    "analystEvidence": "Analyst evidence",
+    "showDetails": "Show analysis",
+    "hideDetails": "Hide analysis",
     "ctaTaken": "Added to watchlist ✓",
     "loading": "Analyzing two engines..."
   },

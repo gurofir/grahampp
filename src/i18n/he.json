@@ -221,6 +221,9 @@
     "whyHeader": "למה",
     "risksHeader": "סיכונים",
     "suggestedAction": "הפעולה המומלצת",
+    "analystEvidence": "ראיות אנליסטיות",
+    "showDetails": "הצג ניתוח",
+    "hideDetails": "הסתר ניתוח",
     "ctaTaken": "נוסף ל-Watchlist ✓",
     "loading": "מנתח שני מנועים..."
   },

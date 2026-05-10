@@ -293,22 +293,6 @@ export default function DualEngineCard({
         badgeText={t(`dualEngine.setup.${data.setupType}`)}
       />
 
-      <div
-        className="p-3 grid grid-cols-2 gap-3"
-        style={{ borderTop: '0.5px solid #E5E7EB' }}
-      >
-        <EnginePanel
-          name={t('dualEngine.engineNames.graham')}
-          engine={data.graham}
-          size={grahamLeads ? 'lead' : 'secondary'}
-        />
-        <EnginePanel
-          name={t('dualEngine.engineNames.market')}
-          engine={data.market}
-          size={grahamLeads ? 'secondary' : 'lead'}
-        />
-      </div>
-
       <div className="px-4 py-3" style={{ borderTop: '0.5px solid #E5E7EB' }}>
         {data.graham.plainSummary ? (
           <PlainSummaryBlock
@@ -330,6 +314,31 @@ export default function DualEngineCard({
             ) : null}
           </>
         )}
+      </div>
+
+      <div
+        className="px-4 pt-3 pb-1"
+        style={{ borderTop: '0.5px solid #E5E7EB' }}
+      >
+        <div
+          className="text-[10px] uppercase tracking-wider text-gray-500"
+          dir="auto"
+        >
+          {t('dualEngine.analystEvidence', 'ראיות אנליסטיות')}
+        </div>
+      </div>
+
+      <div className="px-3 pb-3 grid grid-cols-2 gap-3">
+        <EnginePanel
+          name={t('dualEngine.engineNames.graham')}
+          engine={data.graham}
+          size={grahamLeads ? 'lead' : 'secondary'}
+        />
+        <EnginePanel
+          name={t('dualEngine.engineNames.market')}
+          engine={data.market}
+          size={grahamLeads ? 'secondary' : 'lead'}
+        />
       </div>
 
       <div className="p-3" style={{ borderTop: '0.5px solid #E5E7EB' }}>

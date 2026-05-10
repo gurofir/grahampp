@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   isTailwindSeverity,
@@ -47,8 +48,9 @@ function FragilityPill({ band }: { band: FragilityBand }) {
 
 export default function EnginePanel({ name, engine, size }: EnginePanelProps) {
   const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
   const colors = DECISION_COLOR[engine.decision] ?? DECISION_COLOR.WAIT
-  const decisionFontSize = size === 'lead' ? 36 : 24
+  const decisionFontSize = size === 'lead' ? 32 : 22
   const borderWidth = engine.decision === 'WAIT' ? 0.5 : 2
   const fragilityBand = engine.fragilityBand
   const blocked = !!engine.blocked
@@ -56,6 +58,8 @@ export default function EnginePanel({ name, engine, size }: EnginePanelProps) {
   const tailwindCount = (engine.findings || []).filter((f) =>
     isTailwindSeverity(f.severity),
   ).length
+
+  const hasDetails = !!engine.thesis || !!(counter && counter.summary) || !!engine.trigger || !!engine.entryZone
 
   return (
     <div
@@ -71,6 +75,16 @@ export default function EnginePanel({ name, engine, size }: EnginePanelProps) {
         </span>
         <span className="text-[10px] text-gray-500">
           {t(`dualEngine.confidence.${engine.confidence}`)}
+        </span>
+      </div>
+
+      <div>
+        <span
+          className="font-semibold leading-none"
+          style={{ fontSize: decisionFontSize, color: colors.fg }}
+          dir="ltr"
+        >
+          {t(`dualEngine.decision.${engine.decision}`)}
         </span>
       </div>
 
@@ -111,102 +125,98 @@ export default function EnginePanel({ name, engine, size }: EnginePanelProps) {
         </div>
       ) : null}
 
-      <div>
-        <span
-          className="font-semibold leading-none"
-          style={{ fontSize: decisionFontSize, color: colors.fg }}
-          dir="ltr"
+      {hasDetails ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="self-start text-[11px] text-gray-500 hover:text-gray-900 transition-colors"
+          aria-expanded={expanded}
+          dir="auto"
+          style={{ padding: '2px 0' }}
         >
-          {t(`dualEngine.decision.${engine.decision}`)}
-        </span>
-      </div>
-
-      {engine.thesis ? (
-        <p
-          className="text-[12px] text-gray-700"
-          style={{
-            lineHeight: 1.55,
-            display: '-webkit-box',
-            WebkitLineClamp: 4,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {engine.thesis}
-        </p>
+          {expanded
+            ? `▴ ${t('dualEngine.hideDetails', 'הסתר ניתוח')}`
+            : `▾ ${t('dualEngine.showDetails', 'הצג ניתוח')}`}
+        </button>
       ) : null}
 
-      {counter && counter.summary ? (
-        <div
-          className="rounded-md px-2 py-1.5"
-          style={{
-            backgroundColor: '#FCEBEB66',
-            border: '0.5px solid #F0C9C9',
-          }}
-        >
-          <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: '#A32D2D' }}>
-            {t('reality.counterShort', 'נגד')}
-          </div>
-          <div
-            className="text-[11px] text-gray-800"
-            style={{
-              lineHeight: 1.5,
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-            dir="auto"
-          >
-            {counter.summary}
-          </div>
-        </div>
-      ) : null}
+      {expanded ? (
+        <div className="flex flex-col gap-2 pt-1">
+          {engine.thesis ? (
+            <p
+              className="text-[12px] text-gray-700"
+              style={{ lineHeight: 1.55 }}
+              dir="auto"
+            >
+              {engine.thesis}
+            </p>
+          ) : null}
 
-      {engine.trigger ? (
-        <div
-          className="rounded-md px-2 py-1.5"
-          style={{
-            backgroundColor: '#F8F8F4',
-            border: '0.5px solid #E5E7EB',
-          }}
-        >
-          <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">
-            {t('dualEngine.trigger')}
-          </div>
-          <div
-            className="text-[11px] text-gray-700"
-            style={{
-              lineHeight: 1.5,
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {engine.trigger}
-          </div>
-        </div>
-      ) : null}
+          {counter && counter.summary ? (
+            <div
+              className="rounded-md px-2 py-1.5"
+              style={{
+                backgroundColor: '#FCEBEB66',
+                border: '0.5px solid #F0C9C9',
+              }}
+            >
+              <div
+                className="text-[10px] uppercase tracking-wider mb-0.5"
+                style={{ color: '#A32D2D' }}
+              >
+                {t('reality.counterShort', 'נגד')}
+              </div>
+              <div
+                className="text-[11px] text-gray-800"
+                style={{ lineHeight: 1.5 }}
+                dir="auto"
+              >
+                {counter.summary}
+              </div>
+            </div>
+          ) : null}
 
-      {engine.entryZone ? (
-        <div className="flex items-center gap-1.5">
-          <span
-            className="inline-flex items-center"
-            style={{
-              backgroundColor: '#EAF3DE',
-              color: '#27500A',
-              fontSize: 10,
-              padding: '2px 7px',
-              borderRadius: 4,
-              fontWeight: 500,
-            }}
-          >
-            🎯 {t('dualEngine.entryZone')}
-          </span>
-          <span className="text-[11px] text-gray-700" dir="ltr">
-            {engine.entryZone}
-          </span>
+          {engine.trigger ? (
+            <div
+              className="rounded-md px-2 py-1.5"
+              style={{
+                backgroundColor: '#F8F8F4',
+                border: '0.5px solid #E5E7EB',
+              }}
+            >
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">
+                {t('dualEngine.trigger')}
+              </div>
+              <div
+                className="text-[11px] text-gray-700"
+                style={{ lineHeight: 1.5 }}
+                dir="auto"
+              >
+                {engine.trigger}
+              </div>
+            </div>
+          ) : null}
+
+          {engine.entryZone ? (
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-flex items-center"
+                style={{
+                  backgroundColor: '#EAF3DE',
+                  color: '#27500A',
+                  fontSize: 10,
+                  padding: '2px 7px',
+                  borderRadius: 4,
+                  fontWeight: 500,
+                }}
+              >
+                🎯 {t('dualEngine.entryZone')}
+              </span>
+              <span className="text-[11px] text-gray-700" dir="ltr">
+                {engine.entryZone}
+              </span>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
