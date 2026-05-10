@@ -39,7 +39,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 22+ is required by @supabase/realtime-js (native WebSocket)
+          # and recommended by yahoo-finance2.
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
