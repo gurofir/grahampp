@@ -70,12 +70,20 @@ exports.handler = async (event) => {
   // and expands inline, so a single round-trip is enough.
   const limit = 50;
 
+  // Discovery feed is for actionable opportunities only — exclude pure-AVOID
+  // and neutral setups. The full scan still keeps every analysis in the DB
+  // (e.g. for cache hits on the user's manual searches), but the home feed
+  // shows only situations where Graham OR Market sees a BUY.
+  const ACTIONABLE_SETUPS = ['rare_value', 'consensus_buy', 'market_leading'];
+
   try {
     const nowIso = new Date().toISOString();
     const { data: situations, error } = await supabase
       .from('situations')
       .select(SELECT_FIELDS)
       .gte('expires_at', nowIso)
+      .in('setup_type', ACTIONABLE_SETUPS)
+      .neq('graham_decision', 'AVOID')
       .order('score', { ascending: false })
       .limit(limit);
 

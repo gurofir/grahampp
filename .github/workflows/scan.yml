@@ -31,7 +31,9 @@ jobs:
       ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-      SCAN_LANG: he
+      # Stored content is produced in English. Hebrew UI users see HE labels
+      # around English thesis/insight text.
+      SCAN_LANG: en
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

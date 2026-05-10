@@ -114,7 +114,11 @@ async function runScan(opts = {}) {
   const apiKey = opts.apiKey || process.env.ANTHROPIC_API_KEY;
   const model =
     opts.model || process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
-  const lang = opts.lang === 'en' ? 'en' : 'he';
+  // Discovery analyses are produced in English by default. The app's "official"
+  // language for stored content is English; users who toggle the UI to Hebrew
+  // see HE labels around English thesis text. Pass lang='he' explicitly to
+  // override (e.g. via SCAN_LANG=he).
+  const lang = opts.lang === 'he' ? 'he' : 'en';
   const supabaseUrl = opts.supabaseUrl || process.env.SUPABASE_URL;
   const supabaseKey = opts.supabaseKey || process.env.SUPABASE_SERVICE_KEY;
   const universe = Array.isArray(opts.universe) && opts.universe.length
@@ -198,14 +202,16 @@ async function runScan(opts = {}) {
     scan_run_id: runId,
   }));
 
-  // --- Step 6: Replace expired situations + insert today's set ---------------
+  // --- Step 6: Replace the entire situations table with today's snapshot ----
+  // We delete everything (not just expired rows) so re-running the scan does
+  // not accumulate stale duplicates from prior runs. neq('id', UUID_NIL) is
+  // a "delete all rows" trick PostgREST requires (it forbids unconstrained
+  // deletes by default).
+  const UUID_NIL = '00000000-0000-0000-0000-000000000000';
   try {
-    await supabase
-      .from('situations')
-      .delete()
-      .lt('expires_at', new Date().toISOString());
+    await supabase.from('situations').delete().neq('id', UUID_NIL);
   } catch (err) {
-    log(`[scan] expired-delete failed: ${String(err?.message || err)}`);
+    log(`[scan] table-clear failed: ${String(err?.message || err)}`);
   }
   if (toInsert.length > 0) {
     // Insert in chunks of 50 to stay under PostgREST payload limits.
