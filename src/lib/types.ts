@@ -209,4 +209,9 @@ export interface Analysis {
   ai: AISummary | null
   dualEngine: DualEngine | null
   generatedAt: string
+  // Set when the analysis was served from the Discovery Engine cache (Supabase).
+  // The frontend uses these to skip the /interpret call and to surface a
+  // "scanned X hours ago — refresh" affordance.
+  fromCache?: boolean
+  cachedAt?: string | null
 }

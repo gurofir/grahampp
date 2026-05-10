@@ -299,5 +299,43 @@
     "tickerNotFound": "Ticker not found. Please check and try again.",
     "networkError": "Network error. Please try again.",
     "generic": "Something went wrong. Please try again."
+  },
+  "discovery": {
+    "headerTitle": "Graham scanned the market",
+    "foundOne": "Found one interesting situation",
+    "foundMany": "Found {{count}} interesting situations",
+    "scannedSummary": "from {{universe}} stocks scanned",
+    "lastScanJustNow": "Last scan just now",
+    "lastScanMinutes": "Last scan {{minutes}} minutes ago",
+    "lastScanHours": "Last scan {{hours}} hours ago",
+    "lastScanYesterday": "Last scan yesterday",
+    "lastScanDays": "Last scan {{days}} days ago",
+    "interestingSituations": "Interesting situations",
+    "showMore": "Show {{count}} more situations",
+    "showLess": "Show fewer",
+    "search": "Or search a ticker manually",
+    "noSituations": "Graham didn't find interesting situations in the last scan",
+    "scanPending": "Nightly scan hasn't run yet. You can search a ticker manually in the meantime.",
+    "loading": "Loading situations...",
+    "fromCacheJustNow": "Analysis from nightly scan · updated just now",
+    "fromCacheMinutes": "Analysis from nightly scan · updated {{minutes}} min ago",
+    "fromCacheHours": "Analysis from nightly scan · updated {{hours}} hr ago",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing..."
+  },
+  "situationTypes": {
+    "value_opportunity": "Value Opportunity",
+    "early_recovery": "Early Recovery",
+    "quality_discounted": "Quality Discounted",
+    "deleveraging": "Deleveraging",
+    "growth_compressed": "Growth Compressed",
+    "general": "General Situation"
+  },
+  "setupBadge": {
+    "rare_value": "⚡ Rare Setup",
+    "consensus_buy": "✓ Consensus",
+    "consensus_avoid": "⚠ Avoid",
+    "market_leading": "↑ Market Led",
+    "neutral": "· Neutral"
   }
 }

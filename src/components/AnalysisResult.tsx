@@ -12,7 +12,23 @@ interface AnalysisResultProps {
   aiStatus: AiStatus
   onBack: () => void
   onSave: () => void
+  onRefresh?: () => void
+  refreshing?: boolean
   saved?: boolean
+}
+
+function formatCacheAge(
+  t: ReturnType<typeof useTranslation>['t'],
+  iso: string | null | undefined,
+): string {
+  if (!iso) return ''
+  const ms = Date.now() - new Date(iso).getTime()
+  if (Number.isNaN(ms) || ms < 0) return t('discovery.fromCacheJustNow')
+  const minutes = Math.floor(ms / 60_000)
+  if (minutes < 1) return t('discovery.fromCacheJustNow')
+  if (minutes < 60) return t('discovery.fromCacheMinutes', { minutes })
+  const hours = Math.floor(minutes / 60)
+  return t('discovery.fromCacheHours', { hours })
 }
 
 export default function AnalysisResult({
@@ -20,6 +36,8 @@ export default function AnalysisResult({
   aiStatus,
   onBack,
   onSave,
+  onRefresh,
+  refreshing,
   saved,
 }: AnalysisResultProps) {
   const { t } = useTranslation()
@@ -112,6 +130,24 @@ export default function AnalysisResult({
       >
         ← {t('actions.back')}
       </button>
+
+      {analysis.fromCache && analysis.cachedAt ? (
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+          <span className="text-[11px] text-gray-500 truncate">
+            {formatCacheAge(t, analysis.cachedAt)}
+          </span>
+          {onRefresh ? (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              className="text-[11px] font-medium text-[#185FA5] hover:underline disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            >
+              {refreshing ? t('discovery.refreshing') : t('discovery.refresh')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <DualEngineCard
         data={analysis.dualEngine}

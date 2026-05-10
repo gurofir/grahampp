@@ -299,5 +299,43 @@
     "tickerNotFound": "טיקר לא נמצא. בדוק ונסה שנית.",
     "networkError": "שגיאת רשת. נסה שנית.",
     "generic": "משהו השתבש. נסה שנית."
+  },
+  "discovery": {
+    "headerTitle": "גרהם סרק את השוק",
+    "foundOne": "מצא סיטואציה אחת מעניינת",
+    "foundMany": "מצא {{count}} סיטואציות מעניינות",
+    "scannedSummary": "מתוך {{universe}} מניות שנסרקו",
+    "lastScanJustNow": "סריקה אחרונה הרגע",
+    "lastScanMinutes": "סריקה אחרונה לפני {{minutes}} דקות",
+    "lastScanHours": "סריקה אחרונה לפני {{hours}} שעות",
+    "lastScanYesterday": "סריקה אחרונה אתמול",
+    "lastScanDays": "סריקה אחרונה לפני {{days}} ימים",
+    "interestingSituations": "סיטואציות מעניינות",
+    "showMore": "עוד {{count}} סיטואציות מהסריקה",
+    "showLess": "הצג פחות",
+    "search": "או חפש מניה ידנית",
+    "noSituations": "גרהם לא מצא סיטואציות מעניינות בסריקה האחרונה",
+    "scanPending": "הסריקה הלילית עדיין לא רצה. ניתן לחפש מניה ידנית בינתיים.",
+    "loading": "טוען סיטואציות...",
+    "fromCacheJustNow": "ניתוח מהסריקה הלילית · עודכן הרגע",
+    "fromCacheMinutes": "ניתוח מהסריקה הלילית · עודכן לפני {{minutes}} דקות",
+    "fromCacheHours": "ניתוח מהסריקה הלילית · עודכן לפני {{hours}} שעות",
+    "refresh": "רענן",
+    "refreshing": "מרענן..."
+  },
+  "situationTypes": {
+    "value_opportunity": "הזדמנות ערך",
+    "early_recovery": "התאוששות מוקדמת",
+    "quality_discounted": "איכות בהנחה",
+    "deleveraging": "הורדת מינוף",
+    "growth_compressed": "צמיחה עם מכפיל נמוך",
+    "general": "סיטואציה כללית"
+  },
+  "setupBadge": {
+    "rare_value": "⚡ Rare Setup",
+    "consensus_buy": "✓ Consensus",
+    "consensus_avoid": "⚠ Avoid",
+    "market_leading": "↑ Market Led",
+    "neutral": "· Neutral"
   }
 }

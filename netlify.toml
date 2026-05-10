@@ -9,6 +9,20 @@
 [functions.interpret]
   timeout = 26
 
+# Discovery Engine — public read endpoint (cheap, just reads from Supabase).
+[functions.discover]
+  timeout = 10
+
+# Discovery Engine — nightly scan endpoint. The full S&P500 scan typically
+# takes 10-20 minutes which exceeds Netlify's standard 26s timeout, so we
+# trigger it from GitHub Actions (.github/workflows/scan.yml) running the
+# logic in scripts/run-scan.js. This Netlify endpoint exists for manual
+# debugging via `netlify functions:invoke scan`. If you upgrade to Netlify
+# Pro you can convert it to a Background Function and uncomment:
+#   schedule = "0 3 * * *"
+[functions.scan]
+  timeout = 26
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
