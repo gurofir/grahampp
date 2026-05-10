@@ -66,8 +66,9 @@ exports.handler = async (event) => {
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const showAll = event.queryStringParameters?.all === '1';
-  const limit = showAll ? 50 : 7;
+  // Always return the full set (capped at 50). The UI slices to 3 by default
+  // and expands inline, so a single round-trip is enough.
+  const limit = 50;
 
   try {
     const nowIso = new Date().toISOString();

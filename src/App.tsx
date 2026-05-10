@@ -31,12 +31,7 @@ export default function App() {
   const [savedTicker, setSavedTicker] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  const {
-    data: discovery,
-    loading: discoveryLoading,
-    showAll: discoveryShowAll,
-    setShowAll: setDiscoveryShowAll,
-  } = useDiscovery()
+  const { data: discovery, loading: discoveryLoading } = useDiscovery()
 
   const fetchInterpretation = useCallback(
     async (ticker: string, lang: string) => {
@@ -205,8 +200,6 @@ export default function App() {
                 scannedAt: null,
               }}
               loading={discoveryLoading}
-              showAll={discoveryShowAll}
-              onToggleShowAll={() => setDiscoveryShowAll(!discoveryShowAll)}
               onSituationTap={handleSituationTap}
             />
           ) : null}

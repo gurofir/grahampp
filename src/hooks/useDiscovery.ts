@@ -40,8 +40,6 @@ export interface DiscoveryData {
 interface UseDiscoveryReturn {
   data: DiscoveryData | null
   loading: boolean
-  showAll: boolean
-  setShowAll: (v: boolean) => void
   reload: () => void
 }
 
@@ -50,15 +48,13 @@ const ENDPOINT = '/.netlify/functions/discover'
 export function useDiscovery(): UseDiscoveryReturn {
   const [data, setData] = useState<DiscoveryData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showAll, setShowAll] = useState(false)
   // bumped to force a refetch on demand (e.g. after a manual scan).
   const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    const url = showAll ? `${ENDPOINT}?all=1` : ENDPOINT
-    fetch(url)
+    fetch(ENDPOINT)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (cancelled) return
@@ -66,9 +62,14 @@ export function useDiscovery(): UseDiscoveryReturn {
           setData(null)
           return
         }
+        // The API already sorts by score desc; we sort defensively in case
+        // the client receives an older/stale payload from the CDN.
+        const situations = Array.isArray(d.situations)
+          ? [...d.situations].sort((a, b) => (b?.score ?? 0) - (a?.score ?? 0))
+          : []
         setData({
-          situations: Array.isArray(d.situations) ? d.situations : [],
-          totalCount: typeof d.totalCount === 'number' ? d.totalCount : 0,
+          situations,
+          totalCount: typeof d.totalCount === 'number' ? d.totalCount : situations.length,
           featuredCount:
             typeof d.featuredCount === 'number' ? d.featuredCount : 0,
           universeSize:
@@ -86,9 +87,9 @@ export function useDiscovery(): UseDiscoveryReturn {
     return () => {
       cancelled = true
     }
-  }, [showAll, reloadTick])
+  }, [reloadTick])
 
   const reload = useCallback(() => setReloadTick((n) => n + 1), [])
 
-  return { data, loading, showAll, setShowAll, reload }
+  return { data, loading, reload }
 }

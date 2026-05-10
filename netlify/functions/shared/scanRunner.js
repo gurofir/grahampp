@@ -39,6 +39,10 @@ const FAST_BATCH = 20;
 const FAST_BATCH_DELAY_MS = 200;
 const AI_BATCH = 5;
 const AI_BATCH_DELAY_MS = 500;
+// Hard cap on AI analyses per scan. Keeps a single nightly run under both the
+// cost budget (~$0.20-0.40) and the GitHub Actions wall-clock limit. If the
+// strict filter still leaves more than 25 candidates we just take the first 25.
+const AI_CANDIDATE_CAP = 25;
 const FEATURED_LIMIT = 7;
 const TTL_HOURS = 24;
 
@@ -72,26 +76,33 @@ async function quickFetch(ticker) {
       high52: num(sd.fiftyTwoWeekHigh) ?? num(quote.fiftyTwoWeekHigh),
       grossMargin: num(fd.grossMargins),
       fcfYield: fcf && mc ? (fcf / mc) * 100 : null,
+      // Yahoo doesn't expose true ROIC cheaply; ROA is the closest non-API
+      // proxy we get from financialData and is sufficient for filter quality.
+      roic: num(fd.returnOnAssets) ?? num(fd.returnOnEquity),
     };
   } catch {
     return null;
   }
 }
 
+// Strict filter: a ticker must show BOTH a strong value signal AND a quality
+// signal to make it through. The previous OR-chain let through ~10% of the
+// universe; with this AND-pair we expect ~5% (~25 candidates) which keeps the
+// AI batch under the cost/latency budget.
 function passesFilter(q) {
-  if (!q || !q.currentPrice) return false;
-  const { peRatio: pe, fcfYield: fcf, debtEquity: de } = q;
-  if (de != null && de > 4) return false;
-  if (q.currentPrice <= 0) return false;
-  const valueSignal =
-    (pe != null && pe > 0 && pe < 20) || (fcf != null && fcf > 5);
-  const qualitySignal = q.grossMargin != null && q.grossMargin > 0.35;
-  const drawdownSignal = (() => {
-    const { currentPrice, low52, high52 } = q;
-    if (!currentPrice || !low52 || !high52 || high52 <= low52) return false;
-    return (currentPrice - low52) / (high52 - low52) < 0.35;
-  })();
-  return valueSignal || qualitySignal || drawdownSignal;
+  if (!q || !q.currentPrice || q.currentPrice <= 0) return false;
+  if (q.debtEquity != null && q.debtEquity > 3) return false;
+  if (q.peRatio != null && q.peRatio > 30) return false;
+
+  const strongValue =
+    (q.peRatio != null && q.peRatio > 0 && q.peRatio < 15) ||
+    (q.fcfYield != null && q.fcfYield > 7);
+
+  const qualitySignal =
+    (q.grossMargin != null && q.grossMargin > 0.40) ||
+    (q.roic != null && q.roic > 0.12);
+
+  return strongValue && qualitySignal;
 }
 
 function pause(ms) {
@@ -162,14 +173,20 @@ async function runScan(opts = {}) {
   log(`[scan] after_detection=${withIndicators.length}`);
 
   // --- Step 4: Deep AI -------------------------------------------------------
+  const aiCandidates = withIndicators.slice(0, AI_CANDIDATE_CAP);
+  if (aiCandidates.length < withIndicators.length) {
+    log(
+      `[scan] capping AI candidates: ${withIndicators.length} -> ${aiCandidates.length}`,
+    );
+  }
   const situations = [];
-  for (let i = 0; i < withIndicators.length; i += AI_BATCH) {
-    const batch = withIndicators.slice(i, i + AI_BATCH);
+  for (let i = 0; i < aiCandidates.length; i += AI_BATCH) {
+    const batch = aiCandidates.slice(i, i + AI_BATCH);
     const results = await Promise.all(
       batch.map((item) => analyzeOne(item, { apiKey, model, lang })),
     );
     for (const r of results) if (r) situations.push(r);
-    if (i + AI_BATCH < withIndicators.length) await pause(AI_BATCH_DELAY_MS);
+    if (i + AI_BATCH < aiCandidates.length) await pause(AI_BATCH_DELAY_MS);
   }
   log(`[scan] after_ai=${situations.length}`);
 

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SetupType } from '../lib/types'
 import type { DiscoveryData, SituationRow } from '../hooks/useDiscovery'
@@ -6,10 +7,12 @@ import { currencySymbol } from '../lib/format'
 interface DiscoveryFeedProps {
   data: DiscoveryData
   loading: boolean
-  showAll: boolean
-  onToggleShowAll: () => void
   onSituationTap: (situation: SituationRow) => void
 }
+
+// Number of situations shown before the "show more" accordion expands.
+// Keep low so the home screen stays scannable; the rest are one tap away.
+const DEFAULT_VISIBLE = 3
 
 const SETUP_BADGES: Record<
   SetupType,
@@ -45,18 +48,21 @@ function formatLastScan(t: ReturnType<typeof useTranslation>['t'], iso: string |
 export default function DiscoveryFeed({
   data,
   loading,
-  showAll,
-  onToggleShowAll,
   onSituationTap,
 }: DiscoveryFeedProps) {
   const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
   const situations = data.situations
-  const total = data.totalCount
-  const featured = data.featuredCount || Math.min(7, situations.length)
-  const remaining = Math.max(0, total - featured)
+  const total = situations.length
+  const visibleSituations = expanded
+    ? situations
+    : situations.slice(0, DEFAULT_VISIBLE)
+  const remaining = Math.max(0, total - DEFAULT_VISIBLE)
   const lastScanText = formatLastScan(t, data.scannedAt)
 
-  const headerCount = total === 1 ? t('discovery.foundOne') : t('discovery.foundMany', { count: total })
+  const headerCount = total === 1
+    ? t('discovery.foundOne')
+    : t('discovery.foundMany', { count: total })
 
   if (loading) {
     return (
@@ -107,7 +113,7 @@ export default function DiscoveryFeed({
           {t('discovery.interestingSituations')}
         </h3>
         <ul className="mt-2 divide-y divide-gray-100">
-          {situations.map((s) => (
+          {visibleSituations.map((s) => (
             <li key={s.id}>
               <SituationRowItem
                 situation={s}
@@ -116,18 +122,18 @@ export default function DiscoveryFeed({
             </li>
           ))}
         </ul>
-        {(remaining > 0 || showAll) && (
+        {remaining > 0 ? (
           <button
             type="button"
-            onClick={onToggleShowAll}
+            onClick={() => setExpanded((v) => !v)}
             className="w-full text-center text-[13px] text-gray-600 hover:text-gray-900
                        py-3 border-t border-gray-100 transition-colors"
           >
-            {showAll
+            {expanded
               ? t('discovery.showLess')
               : t('discovery.showMore', { count: remaining })}
           </button>
-        )}
+        ) : null}
       </div>
     </section>
   )
