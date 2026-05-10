@@ -16,7 +16,11 @@
 //
 // Local dev (bypasses corporate TLS proxies via win-ca):
 //   $env:NODE_EXTRA_CA_CERTS = ".\node_modules\win-ca\pem\roots.pem"
-//   node scripts/run-scan.js
+//   node scripts/run-scan.cjs
+//
+// Note: .cjs extension is required because the root package.json declares
+// `"type": "module"`, which would otherwise force this file to be parsed as
+// ESM and break the CommonJS `require()` calls below.
 
 const path = require('path');
 const { runScan } = require(
