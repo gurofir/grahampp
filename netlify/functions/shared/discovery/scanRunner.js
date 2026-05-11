@@ -38,13 +38,12 @@ const yahooFinance = new YahooFinance({
 
 const FAST_BATCH = 20;
 const FAST_BATCH_DELAY_MS = 200;
-const AI_BATCH = 5;
-const AI_BATCH_DELAY_MS = 500;
-// Hard cap on AI analyses per scan. Keeps a single nightly run under both the
-// cost budget (~$0.10-0.20) and the GitHub Actions wall-clock limit. With the
-// expanded universe (~683 tickers) the strict fast filter typically lets
-// through ~30-45 candidates; we cap at 40 to keep the run bounded.
-const AI_CANDIDATE_CAP = 40;
+const AI_BATCH = 4;
+const AI_BATCH_DELAY_MS = 600;
+// No artificial cap on AI analyses. Graham himself decides BUY/WAIT/AVOID;
+// the prefilter only drops tickers that have no usable data. With a ~683-
+// ticker universe and AI_BATCH=4 / 600ms pacing, a full nightly run takes
+// ~15-20 minutes and costs ~$1.50-2.00 in Haiku calls.
 const FEATURED_LIMIT = 7;
 const TTL_HOURS = 24;
 
@@ -87,30 +86,21 @@ async function quickFetch(ticker) {
   }
 }
 
-// Calibrated filter for the expanded ~683-ticker universe (S&P 500 + ADRs +
-// US non-S&P notables). The previous strict AND-pair let through only ~10
-// candidates; we want ~40 (the AI cap) so Graham has a real shortlist to
-// evaluate. Strategy:
-//   1. Hard balance-sheet rejects (debt/equity, P/E speculative cap).
-//   2. EITHER a value signal OR a quality signal (was AND).
-//   3. Missing-data leniency: a ticker isn't dropped just because Yahoo
-//      didn't return one of grossMargin / roic / fcfYield -- otherwise ADRs
-//      and financials get unfairly excluded.
+// Data-sanity prefilter only. Pre-judging "value" or "quality" is Graham's
+// job, not the scanner's -- the previous filters were dropping ~673/683
+// tickers before Graham ever saw them. We now reject only data we cannot
+// run an analysis on:
+//   - Missing or non-positive price (delisted / Yahoo error).
+//   - Catastrophic balance-sheet noise that almost certainly means stale or
+//     broken data (debt/equity > 10).
+//   - Speculative meme-tier P/E (> 200) where indicators won't be meaningful.
+// Anything else -- including high P/E growth names, loss-making companies,
+// and missing-margin ADRs -- goes to Graham, who decides BUY/WAIT/AVOID.
 function passesFilter(q) {
   if (!q || !q.currentPrice || q.currentPrice <= 0) return false;
-  if (q.debtEquity != null && q.debtEquity > 3) return false;
-  if (q.peRatio != null && q.peRatio > 35) return false;
-
-  const valueSignal =
-    (q.peRatio != null && q.peRatio > 0 && q.peRatio < 22) ||
-    (q.fcfYield != null && q.fcfYield > 4);
-
-  const qualitySignal =
-    (q.grossMargin != null && q.grossMargin > 0.30) ||
-    (q.roic != null && q.roic > 0.08);
-
-  // Either signal qualifies; Graham's deeper criteria still gate the BUY.
-  return valueSignal || qualitySignal;
+  if (q.debtEquity != null && q.debtEquity > 10) return false;
+  if (q.peRatio != null && q.peRatio > 200) return false;
+  return true;
 }
 
 function pause(ms) {
@@ -185,12 +175,9 @@ async function runScan(opts = {}) {
   log(`[scan] after_detection=${withIndicators.length}`);
 
   // --- Step 4: Deep AI -------------------------------------------------------
-  const aiCandidates = withIndicators.slice(0, AI_CANDIDATE_CAP);
-  if (aiCandidates.length < withIndicators.length) {
-    log(
-      `[scan] capping AI candidates: ${withIndicators.length} -> ${aiCandidates.length}`,
-    );
-  }
+  // Every ticker that survived data sanity goes to Graham. No cap.
+  const aiCandidates = withIndicators;
+  log(`[scan] ai_candidates=${aiCandidates.length}`);
   const situations = [];
   for (let i = 0; i < aiCandidates.length; i += AI_BATCH) {
     const batch = aiCandidates.slice(i, i + AI_BATCH);
@@ -199,6 +186,7 @@ async function runScan(opts = {}) {
     );
     for (const r of results) if (r) situations.push(r);
     if (i + AI_BATCH < aiCandidates.length) await pause(AI_BATCH_DELAY_MS);
+    if (i % 40 === 0) log(`[scan] ai_progress=${i + batch.length}/${aiCandidates.length}`);
   }
   log(`[scan] after_ai=${situations.length}`);
 
