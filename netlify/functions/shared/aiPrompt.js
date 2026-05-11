@@ -533,12 +533,33 @@ async function runAiInterpretation({ apiKey, model, payload, lang, deadlineMs = 
   };
 }
 
+// Standalone helper for the Discovery scan pipeline: generates ONLY the
+// 2-3 sentence "About" summary so cached scan results can show it without
+// running the full 3-prompt interpretation chain.
+async function runAboutSummary({ apiKey, model, text, deadlineMs = 15000 }) {
+  if (typeof text !== 'string' || !text.trim()) return '';
+  const client = new Anthropic({ apiKey, timeout: deadlineMs + 1000, maxRetries: 0 });
+  try {
+    const result = await streamWithDeadline({
+      client,
+      model,
+      prompt: buildAboutPrompt({ text }),
+      maxTokens: 400,
+      deadlineMs,
+    });
+    return normalizeAbout(tryParseJson(result.text));
+  } catch {
+    return '';
+  }
+}
+
 module.exports = {
   buildPayload,
   buildSectionPrompt,
   buildInsightsPrompt,
   buildVerdictPrompt,
   runAiInterpretation,
+  runAboutSummary,
   KEY_INDICATORS,
   streamWithDeadline,
   tryParseJson,

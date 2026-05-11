@@ -17,7 +17,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const { fetchFundamentals } = require('./fetcher');
 const { computeIndicators } = require('./indicators');
-const { buildPayload } = require('./aiPrompt');
+const { buildPayload, runAboutSummary } = require('./aiPrompt');
 const { runEngines } = require('./engines');
 const { computeFindings, enforceHardBlockers } = require('./realityCheck');
 const {
@@ -279,13 +279,24 @@ async function analyzeOne({ ticker, raw, indicators, intrinsicValue }, ctx) {
       engines: {},
     });
 
-    const enginesResult = await runEngines({
-      apiKey,
-      model,
-      payload,
-      lang,
-      findings: structuralFindings,
-    });
+    // Run engines and the lightweight About summary in parallel so the
+    // wall-clock cost is unchanged. About is best-effort: if it fails or times
+    // out we still ship the situation without an AI summary.
+    const [enginesResult, businessDescription] = await Promise.all([
+      runEngines({
+        apiKey,
+        model,
+        payload,
+        lang,
+        findings: structuralFindings,
+      }),
+      runAboutSummary({
+        apiKey,
+        model,
+        text: raw.businessSummary,
+        deadlineMs: 15000,
+      }).catch(() => ''),
+    ]);
     if (!enginesResult.graham || !enginesResult.market) return null;
 
     const allFindings = computeFindings({
@@ -335,7 +346,29 @@ async function analyzeOne({ ticker, raw, indicators, intrinsicValue }, ctx) {
       earningsDate: raw.earningsDate,
       intrinsicValue,
       indicators,
-      ai: null,
+      // Minimal AI payload — only the About summary is generated during scan;
+      // everything else is left empty so the frontend's optional-chaining reads
+      // (analysis.ai?.indicatorInsights, etc.) gracefully resolve to defaults.
+      ai: businessDescription
+        ? {
+            businessDescription,
+            grahamNarrative: '',
+            positiveSignals: [],
+            challengingSignals: [],
+            questions: [],
+            moatType: 'None',
+            moatRating: 'None',
+            problemClassification: 'None',
+            problemExplanation: '',
+            catalystPresent: false,
+            catalystDescription: null,
+            catalystTimeline: null,
+            verdict: 'waiting',
+            verdictReasoning: '',
+            missingFactors: null,
+            indicatorInsights: {},
+          }
+        : null,
       dualEngine: {
         graham: grahamFinal,
         market: marketFinal,
