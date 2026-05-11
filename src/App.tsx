@@ -13,15 +13,16 @@ import type { Analysis } from './shared/lib/types'
 type View = 'home' | 'loading' | 'result'
 export type AiStatus = 'idle' | 'loading' | 'done' | 'unavailable' | 'error'
 
-// A cached row counts as "complete" only when every AI layer ran successfully
-// during the last scan. If anything is missing (older pre-Storyteller row,
-// failed About summary, partial scan, etc.) the loader will fall through to
-// /interpret to fill in the gaps instead of rendering a half-empty card.
-function isAnalysisComplete(a: Analysis | null | undefined): boolean {
+// A cached row is "renderable from cache" as long as the dual engine ran.
+// Optional AI layers (plainSummary, businessDescription) are best-effort and
+// gracefully degrade in the components — we never burn a fresh /interpret
+// call on a Discovery click just because storyteller or about happened to
+// fail during the scan. Only fall back to /interpret when there is no engine
+// data at all (very old rows, or analyze.js indicators-only response).
+function hasEngineData(a: Analysis | null | undefined): boolean {
   if (!a) return false
-  if (!a.dualEngine || !a.dualEngine.graham || !a.dualEngine.market) return false
-  if (!a.dualEngine.graham.plainSummary) return false
-  if (!a.ai || !a.ai.businessDescription) return false
+  if (!a.dualEngine) return false
+  if (!a.dualEngine.graham || !a.dualEngine.market) return false
   return true
 }
 
@@ -98,11 +99,10 @@ export default function App() {
         setView('result')
         // Update the saved thesis snapshot (price + tiers) for tier-change alerts.
         updateLatestSnapshot(next)
-        // Cache hit AND every AI layer is present → render straight from cache,
-        // skip /interpret entirely. If any layer is missing (old row, partial
-        // scan, storyteller/about failure), fall through to /interpret so the
-        // user always sees a complete card.
-        if (next.fromCache && isAnalysisComplete(next)) {
+        // Cache hit with engine data → render straight from cache, no AI call.
+        // Storyteller / About summaries are best-effort; missing values
+        // gracefully degrade in the components.
+        if (next.fromCache && hasEngineData(next)) {
           setAiStatus('done')
           return
         }
@@ -117,11 +117,10 @@ export default function App() {
 
   const handleSituationTap = useCallback(
     (situation: SituationRow) => {
-      // Open the pre-computed analysis directly from the Discovery feed —
-      // no API call needed for the indicators/engines. But if any AI layer is
-      // missing on the cached row (older pre-Storyteller scan, partial scan,
-      // failed About summary), kick off /interpret to fill in the gaps so the
-      // user still sees a complete card with plainSummary + about.
+      // Discovery is pre-computed — render from cache, no API calls. If
+      // optional AI layers (plainSummary, About) are missing on the cached
+      // row, the components degrade gracefully rather than burn an /interpret
+      // call on every tap.
       setError(null)
       setSavedTicker(null)
       const fullAnalysis: Analysis = {
@@ -130,31 +129,23 @@ export default function App() {
         cachedAt: situation.scanned_at,
       }
       setAnalysis(fullAnalysis)
+      setAiStatus(hasEngineData(fullAnalysis) ? 'done' : 'unavailable')
       setView('result')
       updateLatestSnapshot(fullAnalysis)
-      if (isAnalysisComplete(fullAnalysis)) {
-        setAiStatus('done')
-        return
-      }
-      void fetchInterpretation(fullAnalysis.ticker, i18n.language)
     },
-    [updateLatestSnapshot, fetchInterpretation, i18n.language],
+    [updateLatestSnapshot],
   )
 
   const handleViewThesis = useCallback(
     (thesis: Thesis) => {
       setError(null)
       setSavedTicker(null)
-      if (thesis.analysis && isAnalysisComplete(thesis.analysis)) {
-        // Snapshot is fully populated — render straight from local storage.
+      if (thesis.analysis && hasEngineData(thesis.analysis)) {
         setAnalysis(thesis.analysis)
         setAiStatus('done')
         setView('result')
         return
       }
-      // No snapshot, or snapshot is missing AI layers — go through the normal
-      // analyze flow which will hit Supabase cache first and only run a full
-      // analysis if that's also incomplete.
       void handleAnalyze(thesis.ticker)
     },
     [handleAnalyze],
