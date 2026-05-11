@@ -63,12 +63,12 @@ function stdDev(values) {
   return Math.sqrt(variance);
 }
 
-function buildSeries(key, category, values) {
+function buildSeries(key, category, values, sector) {
   const latestValue = lastFinite(values);
   const { tier, position } =
     latestValue == null
       ? { tier: null, position: null }
-      : computeTierAndPosition(key, latestValue);
+      : computeTierAndPosition(key, latestValue, sector);
   return {
     key,
     category,
@@ -79,11 +79,11 @@ function buildSeries(key, category, values) {
   };
 }
 
-function buildScalar(key, category, value) {
+function buildScalar(key, category, value, sector) {
   if (value == null || !Number.isFinite(value)) {
     return { key, category, value: null, tier: null, position: null };
   }
-  const { tier, position } = computeTierAndPosition(key, value);
+  const { tier, position } = computeTierAndPosition(key, value, sector);
   return { key, category, value, tier, position };
 }
 
@@ -182,7 +182,10 @@ function computeIndicators(raw) {
   const roic = (Number.isFinite(normalizedEbit) && investedCapital > 0)
     ? (normalizedEbit * (1 - TAX_RATE) / investedCapital) * 100
     : null;
-  const B4 = buildScalar('B4_roic', 'B', roic);
+  // B4 uses the sector-relative tier overlay because banks/utilities/REITs
+  // structurally run lower ROIC than tech/healthcare. See scalePosition.js
+  // SECTOR_OVERLAYS for the full table.
+  const B4 = buildScalar('B4_roic', 'B', roic, sector);
 
   const roe = (Number.isFinite(latestNi) && totalEquity > 0)
     ? (latestNi / totalEquity) * 100
@@ -191,7 +194,9 @@ function computeIndicators(raw) {
 
   // ── C. Financial Health ──
   const debtEquity = safeDiv(totalDebt, totalEquity);
-  const C1 = buildScalar('C1_debtEquity', 'C', debtEquity);
+  // C1 uses the sector-relative tier overlay: utilities/REITs/financials
+  // carry structurally higher D/E by design, not as stress signals.
+  const C1 = buildScalar('C1_debtEquity', 'C', debtEquity, sector);
 
   const currentRatio = safeDiv(currentAssets, currentLiabilities);
   const C2 = buildScalar('C2_currentRatio', 'C', currentRatio);
@@ -207,8 +212,11 @@ function computeIndicators(raw) {
   const C4 = buildScalar('C4_netDebtEbitda', 'C', netDebtEbitda);
 
   // ── D. Valuation ──
-  const D1 = buildScalar('D1_pe', 'D', peRatio);
-  const D2 = buildScalar('D2_forwardPE', 'D', forwardPE);
+  // D1/D2 use sector-relative tier overlays: Energy P/E 11 is fair (sector
+  // median); Tech P/E 25 is fair (sector median). The global table treats
+  // both as either "speculative" or "deep_value" -- both wrong.
+  const D1 = buildScalar('D1_pe', 'D', peRatio, sector);
+  const D2 = buildScalar('D2_forwardPE', 'D', forwardPE, sector);
   const D3 = buildScalar('D3_peg', 'D', pegRatio);
 
   const fcfYield = (Number.isFinite(latestFcf) && Number.isFinite(marketCap) && marketCap > 0)
