@@ -40,12 +40,20 @@ const FAST_BATCH = 20;
 const FAST_BATCH_DELAY_MS = 200;
 const AI_BATCH = 4;
 const AI_BATCH_DELAY_MS = 600;
-// No artificial cap on AI analyses. Graham himself decides BUY/WAIT/AVOID;
-// the prefilter only drops tickers that have no usable data. With a ~683-
-// ticker universe and AI_BATCH=4 / 600ms pacing, a full nightly run takes
-// ~15-20 minutes and costs ~$1.50-2.00 in Haiku calls.
 const FEATURED_LIMIT = 7;
 const TTL_HOURS = 24;
+
+// --- Incremental scan thresholds -------------------------------------------
+// A cached situation is reused (no AI re-analysis) when ALL of these hold:
+//   - it was last scanned within STALE_DAYS,
+//   - the live price has moved less than PRICE_DELTA_PCT since the cache,
+//   - earnings were not released within the last EARNINGS_LOOKBACK_DAYS.
+// Otherwise we re-run the full Graham + Market + Storyteller + About pipeline.
+// On a typical day ~80-90% of tickers qualify for refresh-only, cutting AI
+// cost from ~$9/scan to ~$1/scan while still capturing material changes.
+const STALE_DAYS = 14;
+const PRICE_DELTA_PCT = 7;
+const EARNINGS_LOOKBACK_DAYS = 7;
 
 function num(v) {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -70,6 +78,7 @@ async function quickFetch(ticker) {
     return {
       ticker,
       currentPrice: num(quote.regularMarketPrice),
+      dailyChangePct: num(quote.regularMarketChangePercent),
       peRatio: num(sd.trailingPE),
       marketCap: mc,
       debtEquity: num(sd.debtToEquity),
@@ -105,6 +114,82 @@ function passesFilter(q) {
 
 function pause(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+// Decide whether the cached row for a ticker is still fresh enough to skip
+// the AI re-analysis. Returns the reason string ('new', 'stale', 'price',
+// 'earnings') when re-analysis is required, or null when refresh-only is OK.
+function reanalyzeReason(item, existing) {
+  if (!existing || !existing.full_analysis) return 'new';
+  const scannedAt = existing.scanned_at ? new Date(existing.scanned_at).getTime() : 0;
+  const ageDays = (Date.now() - scannedAt) / 86_400_000;
+  if (!Number.isFinite(ageDays) || ageDays > STALE_DAYS) return 'stale';
+
+  const oldPrice = Number(existing.current_price);
+  const newPrice = Number(item.raw?.currentPrice);
+  if (oldPrice > 0 && newPrice > 0) {
+    const deltaPct = (Math.abs(newPrice - oldPrice) / oldPrice) * 100;
+    if (deltaPct > PRICE_DELTA_PCT) return 'price';
+  }
+
+  // Earnings can land between scans; recompute if the last earnings event is
+  // within the lookback window. Check both old and new copies to be safe.
+  const earningsCandidates = [
+    existing.full_analysis?.earningsDate,
+    item.raw?.earningsDate,
+  ].filter(Boolean);
+  for (const e of earningsCandidates) {
+    const t = new Date(e).getTime();
+    if (!Number.isFinite(t)) continue;
+    const daysAgo = (Date.now() - t) / 86_400_000;
+    if (daysAgo >= 0 && daysAgo <= EARNINGS_LOOKBACK_DAYS) return 'earnings';
+  }
+
+  return null;
+}
+
+// Build a Supabase insert row from a cached `existing` row plus fresh quote
+// data, without spending any AI tokens. Updates current price, daily change,
+// and 52-week band; everything else (decisions, indicators, plainSummary,
+// about) is reused from the prior scan's full_analysis.
+function buildRefreshedRow(item, existing) {
+  const fa = existing.full_analysis ? { ...existing.full_analysis } : {};
+  const newPrice = item.raw?.currentPrice ?? existing.current_price;
+  const newChange =
+    item.raw?.dailyChangePct != null
+      ? item.raw.dailyChangePct
+      : existing.daily_change_pct;
+  const newLow = item.raw?.low52 ?? existing.low52;
+  const newHigh = item.raw?.high52 ?? existing.high52;
+
+  fa.currentPrice = newPrice;
+  fa.dailyChangePct = newChange;
+  fa.low52 = newLow;
+  fa.high52 = newHigh;
+
+  return {
+    ticker: item.ticker,
+    company_name: existing.company_name ?? fa.companyName ?? null,
+    sector: existing.sector ?? fa.sector ?? null,
+    country: existing.country ?? fa.country ?? null,
+    current_price: newPrice,
+    daily_change_pct: newChange,
+    low52: newLow,
+    high52: newHigh,
+    setup_type: existing.setup_type,
+    graham_decision: existing.graham_decision,
+    market_decision: existing.market_decision,
+    graham_confidence: existing.graham_confidence,
+    market_confidence: existing.market_confidence,
+    graham_thesis: existing.graham_thesis,
+    market_thesis: existing.market_thesis,
+    insight: existing.insight,
+    score: existing.score,
+    situation_type: existing.situation_type,
+    indicators: fa.indicators ?? existing.indicators ?? null,
+    full_analysis: fa,
+    expires_at: new Date(Date.now() + TTL_HOURS * 3600_000).toISOString(),
+  };
 }
 
 async function runScan(opts = {}) {
@@ -174,9 +259,75 @@ async function runScan(opts = {}) {
   }
   log(`[scan] after_detection=${withIndicators.length}`);
 
+  // --- Step 3.5: Load cached situations for incremental decision -----------
+  // Pull every column we need to rebuild a refresh-only insert row without
+  // touching AI. Failure here just means we fall back to a full scan -- no
+  // cached row will be found in the map and every ticker will reanalyze.
+  const existingByTicker = new Map();
+  try {
+    const { data: existing } = await supabase
+      .from('situations')
+      .select(
+        [
+          'ticker',
+          'company_name',
+          'sector',
+          'country',
+          'current_price',
+          'daily_change_pct',
+          'low52',
+          'high52',
+          'setup_type',
+          'graham_decision',
+          'market_decision',
+          'graham_confidence',
+          'market_confidence',
+          'graham_thesis',
+          'market_thesis',
+          'insight',
+          'score',
+          'situation_type',
+          'indicators',
+          'scanned_at',
+          'full_analysis',
+        ].join(', '),
+      );
+    if (Array.isArray(existing)) {
+      for (const row of existing) {
+        if (row?.ticker) existingByTicker.set(row.ticker, row);
+      }
+    }
+  } catch (err) {
+    log(`[scan] existing-fetch failed: ${String(err?.message || err)}`);
+  }
+  log(`[scan] existing_rows=${existingByTicker.size}`);
+
+  // Partition: anything stale / price-shocked / freshly-reported goes to AI;
+  // everything else just gets a price refresh from the existing row.
+  const toReanalyze = [];
+  const toRefresh = [];
+  const reasonCounts = { new: 0, stale: 0, price: 0, earnings: 0 };
+  for (const item of withIndicators) {
+    const existing = existingByTicker.get(item.ticker);
+    const reason = reanalyzeReason(item, existing);
+    if (reason) {
+      reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+      toReanalyze.push(item);
+    } else {
+      toRefresh.push({ item, existing });
+    }
+  }
+  log(
+    `[scan] incremental: reanalyze=${toReanalyze.length} ` +
+      `refresh=${toRefresh.length} ` +
+      `(new=${reasonCounts.new} stale=${reasonCounts.stale} ` +
+      `price=${reasonCounts.price} earnings=${reasonCounts.earnings})`,
+  );
+
   // --- Step 4: Deep AI -------------------------------------------------------
-  // Every ticker that survived data sanity goes to Graham. No cap.
-  const aiCandidates = withIndicators;
+  // Only the reanalyze set spends AI tokens. Refreshed tickers reuse their
+  // cached Graham/Market/Storyteller/About output.
+  const aiCandidates = toReanalyze;
   log(`[scan] ai_candidates=${aiCandidates.length}`);
   const situations = [];
   for (let i = 0; i < aiCandidates.length; i += AI_BATCH) {
@@ -190,9 +341,23 @@ async function runScan(opts = {}) {
   }
   log(`[scan] after_ai=${situations.length}`);
 
+  // Rebuild cheap refresh rows for the skip set (no AI cost).
+  const refreshedRows = [];
+  for (const { item, existing } of toRefresh) {
+    try {
+      refreshedRows.push(buildRefreshedRow(item, existing));
+    } catch (err) {
+      log(`[scan] refresh-build failed for ${item.ticker}: ${String(err?.message || err)}`);
+    }
+  }
+  log(`[scan] after_refresh=${refreshedRows.length}`);
+
   // --- Step 5: Score + rank + flag featured ----------------------------------
-  situations.sort((a, b) => b.score - a.score);
-  const toInsert = situations.map((s, i) => ({
+  // Merge freshly-analyzed situations with the cheap refresh-only rows. Both
+  // shapes already contain the columns the situations table expects.
+  const merged = [...situations, ...refreshedRows];
+  merged.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const toInsert = merged.map((s, i) => ({
     ...s,
     is_featured: i < FEATURED_LIMIT,
     scan_run_id: runId,
@@ -219,6 +384,10 @@ async function runScan(opts = {}) {
   }
 
   const durationMs = Date.now() - startTime;
+  // after_ai is the user-visible "size of the feed" -- count both fresh AI
+  // analyses and reused refresh rows so the dashboard doesn't shrink to ~10%
+  // on incremental days.
+  const totalSituations = situations.length + refreshedRows.length;
   await supabase
     .from('scan_runs')
     .update({
@@ -226,22 +395,27 @@ async function runScan(opts = {}) {
       universe_size: universe.length,
       after_filter: candidates.length,
       after_detection: withIndicators.length,
-      after_ai: situations.length,
-      featured_count: Math.min(FEATURED_LIMIT, situations.length),
+      after_ai: totalSituations,
+      featured_count: Math.min(FEATURED_LIMIT, totalSituations),
       duration_ms: durationMs,
       status: 'done',
     })
     .eq('id', runId);
 
-  log(`[scan] done in ${durationMs}ms`);
+  log(
+    `[scan] done in ${durationMs}ms · reanalyzed=${situations.length} ` +
+      `refreshed=${refreshedRows.length}`,
+  );
   return {
     ok: true,
     runId,
     universeSize: universe.length,
     candidates: candidates.length,
     withIndicators: withIndicators.length,
-    situations: situations.length,
-    featured: Math.min(FEATURED_LIMIT, situations.length),
+    reanalyzed: situations.length,
+    refreshed: refreshedRows.length,
+    situations: totalSituations,
+    featured: Math.min(FEATURED_LIMIT, totalSituations),
     durationMs,
   };
 }
