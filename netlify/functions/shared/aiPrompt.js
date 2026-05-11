@@ -210,31 +210,38 @@ GLOBAL RULES:
 - Avoid judgment words: strong, weak, good, bad, healthy, dangerous, critical, חזק, חלש, מסוכן, בעייתי. Describe numbers and tensions only.
 - missingFactors must be null when verdict is "interesting" or "pass".`;
 
-const TRANSLATE_PROMPT = `You are a professional translator.
-Translate the input text into the target language faithfully.
+// Generates a tight, plain-English summary of the company's official Yahoo
+// Finance "longBusinessSummary" for the About accordion at the top of the
+// analysis screen. Output language is always English regardless of the UI
+// language — Hebrew users still see HE labels around English content.
+const ABOUT_PROMPT = `You write short, plain-English company summaries for retail investors.
 
-Rules:
-- Preserve ALL factual content: business segments, geographies, hubs, products/services, fleet sizes, customer types, founding year, headquarters, etc. Do NOT summarize, drop, or merge facts.
-- Do NOT add interpretation, opinions, or judgment words. Do NOT embellish.
-- Use clean, concise wording — no flowery adjectives, no repeats.
-- If the source is already in the target language, return it as-is (only trim whitespace).
-- Output is plain text in a single paragraph. No markdown, no bullets, no quotes.
+Given the company's official long description, write a 2-3 sentence summary in plain English that explains:
+1. What the company actually does (its product or service).
+2. How it makes money (revenue model, key markets it serves).
+3. (Optional, only if the source clearly states it) Its market position or what makes it distinctive.
+
+HARD RULES:
+- 2 to 3 sentences total. Strictly under 60 words.
+- Plain English only. Never use financial acronyms (no FCF, EBITDA, ARR, SaaS, EPS, ROIC).
+- No numbers, no percentages, no financial metrics, no stock-price language.
+- No buy/sell hints, no opinions, no superlatives ("leading", "premier", "best", "top") UNLESS the source explicitly states the company is the largest in its market.
+- Do not start with the company name; start with what it does (e.g. "Sells supplemental insurance...", "Operates the world's largest container shipping fleet...").
+- If the input is empty or unintelligible, return an empty string.
 
 Respond ONLY with this JSON (no markdown fences, no prose):
 {
-  "translation": "the translated text"
+  "businessDescription": "your 2-3 sentence summary"
 }`;
 
 function langInstruction(lang) {
   return lang === 'en' ? 'Language: ENGLISH.' : 'Language: HEBREW (כל הטקסט בעברית).';
 }
 
-function buildTranslatePrompt({ text, lang }) {
-  return `${TRANSLATE_PROMPT}
+function buildAboutPrompt({ text }) {
+  return `${ABOUT_PROMPT}
 
-Target ${langInstruction(lang)}
-
-INPUT:
+INPUT (raw company description):
 ${JSON.stringify({ text: typeof text === 'string' ? text.slice(0, 2500) : '' })}`;
 }
 
@@ -438,9 +445,9 @@ async function streamWithDeadline({ client, model, prompt, maxTokens, deadlineMs
   return { text: collected.trim(), stoppedEarly, elapsedMs: Date.now() - start };
 }
 
-function normalizeTranslation(parsed) {
+function normalizeAbout(parsed) {
   if (!parsed || typeof parsed !== 'object') return '';
-  const v = parsed.translation;
+  const v = parsed.businessDescription;
   return typeof v === 'string' ? v.trim() : '';
 }
 
@@ -449,20 +456,20 @@ async function runAiInterpretation({ apiKey, model, payload, lang, deadlineMs = 
   const sectionPrompt = buildSectionPrompt({ payload, lang });
   const insightsPrompt = buildInsightsPrompt({ payload, lang });
   const verdictPrompt = buildVerdictPrompt({ payload, lang });
-  const needsTranslation = lang !== 'en' && typeof payload.businessSummary === 'string' && payload.businessSummary.trim();
-  const translatePrompt = needsTranslation
-    ? buildTranslatePrompt({ text: payload.businessSummary, lang })
+  const hasBusinessText = typeof payload.businessSummary === 'string' && payload.businessSummary.trim();
+  const aboutPrompt = hasBusinessText
+    ? buildAboutPrompt({ text: payload.businessSummary })
     : null;
 
-  const [sectionResult, insightsResult, verdictResult, translateResult] = await Promise.all([
+  const [sectionResult, insightsResult, verdictResult, aboutResult] = await Promise.all([
     streamWithDeadline({ client, model, prompt: sectionPrompt, maxTokens: 2000, deadlineMs })
       .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message })),
     streamWithDeadline({ client, model, prompt: insightsPrompt, maxTokens: 2000, deadlineMs })
       .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message })),
     streamWithDeadline({ client, model, prompt: verdictPrompt, maxTokens: 1200, deadlineMs })
       .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message })),
-    translatePrompt
-      ? streamWithDeadline({ client, model, prompt: translatePrompt, maxTokens: 1800, deadlineMs })
+    aboutPrompt
+      ? streamWithDeadline({ client, model, prompt: aboutPrompt, maxTokens: 400, deadlineMs })
           .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message }))
       : Promise.resolve({ text: '', stoppedEarly: false, elapsedMs: 0 }),
   ]);
@@ -470,31 +477,31 @@ async function runAiInterpretation({ apiKey, model, payload, lang, deadlineMs = 
   const section = normalizeSection(tryParseJson(sectionResult.text));
   const indicatorInsights = normalizeInsights(tryParseJson(insightsResult.text), payload.indicators);
   const verdictData = normalizeVerdict(tryParseJson(verdictResult.text));
-  const translation = normalizeTranslation(tryParseJson(translateResult.text));
+  const aboutDescription = normalizeAbout(tryParseJson(aboutResult.text));
 
   const totalLen =
     sectionResult.text.length +
     insightsResult.text.length +
     verdictResult.text.length +
-    translateResult.text.length;
+    aboutResult.text.length;
   const anyEarly =
     sectionResult.stoppedEarly ||
     insightsResult.stoppedEarly ||
     verdictResult.stoppedEarly ||
-    translateResult.stoppedEarly;
+    aboutResult.stoppedEarly;
   const maxMs = Math.max(
     sectionResult.elapsedMs,
     insightsResult.elapsedMs,
     verdictResult.elapsedMs,
-    translateResult.elapsedMs,
+    aboutResult.elapsedMs,
   );
 
-  if (!section && Object.keys(indicatorInsights).length === 0 && !verdictData && !translation) {
+  if (!section && Object.keys(indicatorInsights).length === 0 && !verdictData && !aboutDescription) {
     return { ai: null, rawTextLength: totalLen, stoppedEarly: anyEarly, elapsedMs: maxMs };
   }
 
   const ai = {
-    businessDescription: translation || section?.businessDescription || '',
+    businessDescription: aboutDescription || section?.businessDescription || '',
     grahamNarrative: section?.grahamNarrative || '',
     positiveSignals: section?.positiveSignals || [],
     challengingSignals: section?.challengingSignals || [],
@@ -521,7 +528,7 @@ async function runAiInterpretation({ apiKey, model, payload, lang, deadlineMs = 
       section: { len: sectionResult.text.length, stoppedEarly: sectionResult.stoppedEarly, ms: sectionResult.elapsedMs },
       insights: { len: insightsResult.text.length, stoppedEarly: insightsResult.stoppedEarly, ms: insightsResult.elapsedMs, count: Object.keys(indicatorInsights).length },
       verdict: { len: verdictResult.text.length, stoppedEarly: verdictResult.stoppedEarly, ms: verdictResult.elapsedMs, ok: !!verdictData },
-      translation: { len: translateResult.text.length, stoppedEarly: translateResult.stoppedEarly, ms: translateResult.elapsedMs, ok: !!translation },
+      about: { len: aboutResult.text.length, stoppedEarly: aboutResult.stoppedEarly, ms: aboutResult.elapsedMs, ok: !!aboutDescription },
     },
   };
 }

@@ -3,6 +3,7 @@ import type { Analysis } from '../lib/types'
 import type { AiStatus } from '../App'
 import Accordion, { type AccordionItemDef } from './Accordion'
 import { ColorStrip, IndicatorRows } from './AccordionContent'
+import AboutAccordion from './AboutAccordion'
 import DualEngineCard from './DualEngineCard'
 import ReasonsAccordion from './ReasonsAccordion'
 import { INDICATORS_BY_SECTION, SECTION_ORDER } from '../lib/format'
@@ -148,6 +149,14 @@ export default function AnalysisResult({
           ) : null}
         </div>
       ) : null}
+
+      <AboutAccordion
+        companyName={analysis.companyName}
+        sector={analysis.sector}
+        country={analysis.country}
+        businessDescription={analysis.ai?.businessDescription}
+        longBusinessSummary={analysis.businessSummary}
+      />
 
       <DualEngineCard
         data={analysis.dualEngine}

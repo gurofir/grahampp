@@ -300,6 +300,12 @@
     "networkError": "שגיאת רשת. נסה שנית.",
     "generic": "משהו השתבש. נסה שנית."
   },
+  "about": {
+    "header": "אודות {{name}}",
+    "readFull": "קרא את התיאור המלא",
+    "hideFull": "הסתר תיאור מלא",
+    "unavailable": "אין תיאור זמין לחברה."
+  },
   "discovery": {
     "headerTitle": "גרהם סרק את השוק",
     "foundOne": "מצא סיטואציה אחת מעניינת",

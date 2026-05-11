@@ -300,6 +300,12 @@
     "networkError": "Network error. Please try again.",
     "generic": "Something went wrong. Please try again."
   },
+  "about": {
+    "header": "About {{name}}",
+    "readFull": "Read full description",
+    "hideFull": "Hide full description",
+    "unavailable": "No company description available."
+  },
   "discovery": {
     "headerTitle": "Graham scanned the market",
     "foundOne": "Found one interesting situation",
