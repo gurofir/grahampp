@@ -1,13 +1,22 @@
 'use strict';
 
 const { computeTierAndPosition } = require('./scalePosition');
+const { computeIntrinsicValue } = require('./valuationModel');
+const { isCyclicalSector } = require('./sectorTaxonomy');
 
 const TAX_RATE = 0.21;
 const MAINT_CAPEX_PORTION = 0.6;
-const DCF_DISCOUNT_RATE = 0.10;
-const DCF_EXIT_MULTIPLE = 15;
-const DCF_YEARS = 3;
-const GRAHAM_BASE = 8.5;
+
+// Median helper, used to normalize cyclical EBIT so a peak/trough year
+// doesn't dominate ROIC (the moat lens). Returns null on empty input.
+function medianFinite(arr) {
+  const sorted = (arr || []).filter(Number.isFinite).slice().sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
 
 function safeDiv(num, den) {
   if (den == null || !Number.isFinite(den) || den === 0) return null;
@@ -112,6 +121,7 @@ function computeIndicators(raw) {
     payoutRatio = null,
     dividendStreak = null,
     insider = null,
+    sector = null,
   } = raw;
 
   // Per-year FCF
@@ -161,8 +171,16 @@ function computeIndicators(raw) {
 
   const latestEbit = lastFinite(ebits);
   const investedCapital = (totalEquity || 0) + (totalDebt || 0) - (cash || 0);
-  const roic = (Number.isFinite(latestEbit) && investedCapital > 0)
-    ? (latestEbit * (1 - TAX_RATE) / investedCapital) * 100
+  // For cyclical sectors (Energy, Materials, Industrials, Consumer
+  // Cyclical, Financials, Real Estate) we use a 5-year median EBIT so the
+  // moat lens isn't fooled by peak earnings. For stable businesses the
+  // latest year is the right base. Both pass through the same tier table
+  // so the consumer doesn't need to know the difference.
+  const normalizedEbit = isCyclicalSector(sector)
+    ? medianFinite(ebits.slice(-5))
+    : latestEbit;
+  const roic = (Number.isFinite(normalizedEbit) && investedCapital > 0)
+    ? (normalizedEbit * (1 - TAX_RATE) / investedCapital) * 100
     : null;
   const B4 = buildScalar('B4_roic', 'B', roic);
 
@@ -204,25 +222,24 @@ function computeIndicators(raw) {
 
   const D6 = buildScalar('D6_priceSales', 'D', priceSales);
 
-  // Intrinsic value
-  const ltg = Number.isFinite(longTermGrowthRate) ? longTermGrowthRate : null;
-  const grahamIntrinsic = (Number.isFinite(forwardEPS) && forwardEPS > 0 && ltg != null)
-    ? forwardEPS * (ltg + GRAHAM_BASE)
-    : null;
-
-  const dcfIntrinsic = (Number.isFinite(latestFcf) && latestFcf > 0 &&
-                       Number.isFinite(sharesOutstanding) && sharesOutstanding > 0 && ltg != null)
-    ? (() => {
-        const g = ltg / 100;
-        const projected = latestFcf * Math.pow(1 + g, DCF_YEARS);
-        return (projected * DCF_EXIT_MULTIPLE) / Math.pow(1 + DCF_DISCOUNT_RATE, DCF_YEARS) / sharesOutstanding;
-      })()
-    : null;
-
-  const validIvs = [grahamIntrinsic, dcfIntrinsic].filter((v) => Number.isFinite(v) && v > 0);
-  const intrinsicAvg = validIvs.length > 0
-    ? validIvs.reduce((a, b) => a + b, 0) / validIvs.length
-    : null;
+  // Intrinsic value -- delegated to the dedicated valuation model so this
+  // file stays focused on indicator wiring. See valuationModel.js for the
+  // two-stage DCF, sector-aware discount/terminal rates, normalized FCF
+  // base, and bond-yield-adjusted Graham formula.
+  const ivResult = computeIntrinsicValue({
+    fcfArr,
+    netIncomes,
+    forwardEPS,
+    ltgPct: longTermGrowthRate,
+    sector,
+    totalDebt,
+    cash,
+    sharesOutstanding,
+    debtEquity,
+  });
+  const grahamIntrinsic = ivResult.graham;
+  const dcfIntrinsic = ivResult.dcf;
+  const intrinsicAvg = ivResult.average;
 
   const marginOfSafety = (Number.isFinite(intrinsicAvg) && intrinsicAvg > 0 && Number.isFinite(currentPrice))
     ? ((intrinsicAvg - currentPrice) / intrinsicAvg) * 100
@@ -312,9 +329,11 @@ function computeIndicators(raw) {
   return {
     indicators,
     intrinsicValue: {
-      graham: grahamIntrinsic != null ? +grahamIntrinsic.toFixed(2) : null,
-      dcf: dcfIntrinsic != null ? +dcfIntrinsic.toFixed(2) : null,
-      average: intrinsicAvg != null ? +intrinsicAvg.toFixed(2) : null,
+      graham: grahamIntrinsic,
+      dcf: dcfIntrinsic,
+      average: intrinsicAvg,
+      method: ivResult.method,
+      inputs: ivResult.inputs,
     },
     fcfArr,
     fcfConversions,

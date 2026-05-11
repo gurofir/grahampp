@@ -81,6 +81,10 @@ function buildPayload({
       ? {
           graham: round(intrinsicValue.graham, 2),
           dcf: round(intrinsicValue.dcf, 2),
+          // method tells the AI which inputs produced the fair value so it
+          // can calibrate its conviction (e.g., 'graham_only' = no DCF
+          // available, treat with more caution).
+          method: intrinsicValue.method ?? null,
         }
       : null,
     indicators: slim,
