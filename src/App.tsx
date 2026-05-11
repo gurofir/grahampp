@@ -13,6 +13,18 @@ import type { Analysis } from './shared/lib/types'
 type View = 'home' | 'loading' | 'result'
 export type AiStatus = 'idle' | 'loading' | 'done' | 'unavailable' | 'error'
 
+// A cached row counts as "complete" only when every AI layer ran successfully
+// during the last scan. If anything is missing (older pre-Storyteller row,
+// failed About summary, partial scan, etc.) the loader will fall through to
+// /interpret to fill in the gaps instead of rendering a half-empty card.
+function isAnalysisComplete(a: Analysis | null | undefined): boolean {
+  if (!a) return false
+  if (!a.dualEngine || !a.dualEngine.graham || !a.dualEngine.market) return false
+  if (!a.dualEngine.graham.plainSummary) return false
+  if (!a.ai || !a.ai.businessDescription) return false
+  return true
+}
+
 export default function App() {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.language === 'he'
@@ -86,13 +98,14 @@ export default function App() {
         setView('result')
         // Update the saved thesis snapshot (price + tiers) for tier-change alerts.
         updateLatestSnapshot(next)
-        // Cache hit: analyze already returned the full pre-computed analysis
-        // (including dualEngine + plainSummary). Skip the AI re-interpretation.
-        if (next.fromCache && next.dualEngine) {
+        // Cache hit AND every AI layer is present → render straight from cache,
+        // skip /interpret entirely. If any layer is missing (old row, partial
+        // scan, storyteller/about failure), fall through to /interpret so the
+        // user always sees a complete card.
+        if (next.fromCache && isAnalysisComplete(next)) {
           setAiStatus('done')
           return
         }
-        // Kick off the AI interpretation asynchronously; indicators render immediately.
         void fetchInterpretation(next.ticker, i18n.language)
       } catch {
         setError(t('errors.networkError'))
@@ -105,7 +118,10 @@ export default function App() {
   const handleSituationTap = useCallback(
     (situation: SituationRow) => {
       // Open the pre-computed analysis directly from the Discovery feed —
-      // no API call needed.
+      // no API call needed for the indicators/engines. But if any AI layer is
+      // missing on the cached row (older pre-Storyteller scan, partial scan,
+      // failed About summary), kick off /interpret to fill in the gaps so the
+      // user still sees a complete card with plainSummary + about.
       setError(null)
       setSavedTicker(null)
       const fullAnalysis: Analysis = {
@@ -114,25 +130,32 @@ export default function App() {
         cachedAt: situation.scanned_at,
       }
       setAnalysis(fullAnalysis)
-      setAiStatus(fullAnalysis.dualEngine ? 'done' : 'unavailable')
       setView('result')
       updateLatestSnapshot(fullAnalysis)
+      if (isAnalysisComplete(fullAnalysis)) {
+        setAiStatus('done')
+        return
+      }
+      void fetchInterpretation(fullAnalysis.ticker, i18n.language)
     },
-    [updateLatestSnapshot],
+    [updateLatestSnapshot, fetchInterpretation, i18n.language],
   )
 
   const handleViewThesis = useCallback(
     (thesis: Thesis) => {
       setError(null)
       setSavedTicker(null)
-      if (thesis.analysis) {
+      if (thesis.analysis && isAnalysisComplete(thesis.analysis)) {
+        // Snapshot is fully populated — render straight from local storage.
         setAnalysis(thesis.analysis)
-        setAiStatus(thesis.analysis.ai ? 'done' : 'unavailable')
+        setAiStatus('done')
         setView('result')
-      } else {
-        // Legacy thesis without cached analysis — fall back to fresh fetch.
-        void handleAnalyze(thesis.ticker)
+        return
       }
+      // No snapshot, or snapshot is missing AI layers — go through the normal
+      // analyze flow which will hit Supabase cache first and only run a full
+      // analysis if that's also incomplete.
+      void handleAnalyze(thesis.ticker)
     },
     [handleAnalyze],
   )
