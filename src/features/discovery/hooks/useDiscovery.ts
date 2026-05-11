@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Analysis, Decision, Confidence, SetupType } from '../lib/types'
+import type { Analysis, Decision, Confidence, SetupType } from '../../../shared/lib/types'
 
 // Discovery situation as returned by /.netlify/functions/discover. Field
 // names mirror the Supabase columns (snake_case → exact JSON shape).

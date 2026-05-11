@@ -1,7 +1,7 @@
 'use strict';
 
 const Anthropic = require('@anthropic-ai/sdk').default;
-const { streamWithDeadline, tryParseJson, langInstruction } = require('./aiPrompt');
+const { streamWithDeadline, tryParseJson, langInstruction } = require('../ai/aiPrompt');
 
 const DECISIONS = ['BUY', 'WAIT', 'AVOID'];
 const CONFIDENCE = ['Low', 'Medium', 'High'];

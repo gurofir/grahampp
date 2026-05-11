@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { SetupType } from '../lib/types'
-import type { DiscoveryData, SituationRow } from '../hooks/useDiscovery'
-import { currencySymbol } from '../lib/format'
+import type { SetupType } from '../../shared/lib/types'
+import type { DiscoveryData, SituationRow } from './hooks/useDiscovery'
+import { currencySymbol } from '../../shared/lib/format'
 
 interface DiscoveryFeedProps {
   data: DiscoveryData

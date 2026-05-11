@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
-import type { IndicatorEntry } from '../lib/types'
-import { isSeries } from '../lib/types'
-import { canonicalTier, type CanonicalTier } from '../lib/format'
+import type { IndicatorEntry } from '../../shared/lib/types'
+import { isSeries } from '../../shared/lib/types'
+import { canonicalTier, type CanonicalTier } from '../../shared/lib/format'
 import IndicatorRow from './IndicatorRow'
 
 const STRIP_COLORS: Record<CanonicalTier, { color: string; opacity: number }> = {

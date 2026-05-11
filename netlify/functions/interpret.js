@@ -1,11 +1,11 @@
 'use strict';
 
-const { computeIndicators } = require('./shared/indicators');
-const { buildPayload, runAiInterpretation } = require('./shared/aiPrompt');
-const { runEngines } = require('./shared/engines');
-const { computeFindings, enforceHardBlockers } = require('./shared/realityCheck');
-const { runStoryteller } = require('./shared/storyteller');
-const { fetchFundamentals } = require('./shared/fetcher');
+const { computeIndicators } = require('./shared/analysis/indicators');
+const { buildPayload, runAiInterpretation } = require('./shared/ai/aiPrompt');
+const { runEngines } = require('./shared/engines/engines');
+const { computeFindings, enforceHardBlockers } = require('./shared/reality/realityCheck');
+const { runStoryteller } = require('./shared/ai/storyteller');
+const { fetchFundamentals } = require('./shared/fetch/fetcher');
 const {
   deriveAlignment,
   deriveSetupType,
@@ -13,7 +13,7 @@ const {
   deriveGrahamLedAction,
   deriveCTALabel,
   deriveCTASub,
-} = require('./shared/alignment');
+} = require('./shared/alignment/alignment');
 
 const TICKER_RE = /^[A-Z][A-Z0-9.\-]{0,9}$/;
 const JSON_HEADERS = {

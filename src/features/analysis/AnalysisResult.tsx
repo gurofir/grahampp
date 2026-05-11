@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next'
-import type { Analysis } from '../lib/types'
-import type { AiStatus } from '../App'
-import Accordion, { type AccordionItemDef } from './Accordion'
+import type { Analysis } from '../../shared/lib/types'
+import type { AiStatus } from '../../App'
+import Accordion, { type AccordionItemDef } from '../../shared/ui/Accordion'
 import { ColorStrip, IndicatorRows } from './AccordionContent'
 import AboutAccordion from './AboutAccordion'
 import DualEngineCard from './DualEngineCard'
 import ReasonsAccordion from './ReasonsAccordion'
-import { INDICATORS_BY_SECTION, SECTION_ORDER } from '../lib/format'
+import { INDICATORS_BY_SECTION, SECTION_ORDER } from '../../shared/lib/format'
 
 interface AnalysisResultProps {
   analysis: Analysis

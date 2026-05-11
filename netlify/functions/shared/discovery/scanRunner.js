@@ -15,11 +15,11 @@
 const YahooFinance = require('yahoo-finance2').default;
 const { createClient } = require('@supabase/supabase-js');
 
-const { fetchFundamentals } = require('./fetcher');
-const { computeIndicators } = require('./indicators');
-const { buildPayload, runAboutSummary } = require('./aiPrompt');
-const { runEngines } = require('./engines');
-const { computeFindings, enforceHardBlockers } = require('./realityCheck');
+const { fetchFundamentals } = require('../fetch/fetcher');
+const { computeIndicators } = require('../analysis/indicators');
+const { buildPayload, runAboutSummary } = require('../ai/aiPrompt');
+const { runEngines } = require('../engines/engines');
+const { computeFindings, enforceHardBlockers } = require('../reality/realityCheck');
 const {
   deriveAlignment,
   deriveSetupType,
@@ -27,7 +27,7 @@ const {
   deriveGrahamLedAction,
   deriveCTALabel,
   deriveCTASub,
-} = require('./alignment');
+} = require('../alignment/alignment');
 const { scoreSetup, detectSituationType } = require('./discoveryScoring');
 const { SP500_TICKERS } = require('./universe');
 

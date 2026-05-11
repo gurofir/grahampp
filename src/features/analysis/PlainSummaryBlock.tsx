@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import type { Decision, PlainSummary } from '../lib/types'
+import type { Decision, PlainSummary } from '../../shared/lib/types'
 
 interface PlainSummaryBlockProps {
   summary: PlainSummary

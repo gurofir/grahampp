@@ -5,7 +5,7 @@ import {
   type Decision,
   type EngineResult,
   type FragilityBand,
-} from '../lib/types'
+} from '../../shared/lib/types'
 
 interface EnginePanelProps {
   name: string

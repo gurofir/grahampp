@@ -4,7 +4,7 @@ import {
   type Decision,
   type EngineResult,
   type FragilityFinding,
-} from '../lib/types'
+} from '../../shared/lib/types'
 
 interface ReasonsAccordionProps {
   graham: EngineResult

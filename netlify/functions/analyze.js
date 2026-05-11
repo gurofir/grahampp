@@ -1,7 +1,7 @@
 'use strict';
 
-const { computeIndicators } = require('./shared/indicators');
-const { fetchFundamentals } = require('./shared/fetcher');
+const { computeIndicators } = require('./shared/analysis/indicators');
+const { fetchFundamentals } = require('./shared/fetch/fetcher');
 
 const TICKER_RE = /^[A-Z][A-Z0-9.\-]{0,9}$/;
 const JSON_HEADERS = {

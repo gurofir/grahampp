@@ -24,7 +24,7 @@
 
 const path = require('path');
 const { runScan } = require(
-  path.join(__dirname, '..', 'netlify', 'functions', 'shared', 'scanRunner.js'),
+  path.join(__dirname, '..', 'netlify', 'functions', 'shared', 'discovery', 'scanRunner.js'),
 );
 
 (async () => {

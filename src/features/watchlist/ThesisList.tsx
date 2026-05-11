@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Thesis } from '../hooks/useTheses'
-import { currencySymbol } from '../lib/format'
+import type { Thesis } from './hooks/useTheses'
+import { currencySymbol } from '../../shared/lib/format'
 
 interface ThesisListProps {
   theses: Thesis[]

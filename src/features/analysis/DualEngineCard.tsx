@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Confidence, DualEngine, SetupType } from '../lib/types'
-import { currencySymbol } from '../lib/format'
+import type { Confidence, DualEngine, SetupType } from '../../shared/lib/types'
+import { currencySymbol } from '../../shared/lib/format'
 import EnginePanel from './EnginePanel'
 import PlainSummaryBlock from './PlainSummaryBlock'
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { Analysis, IndicatorEntry } from '../lib/types'
-import { isSeries } from '../lib/types'
+import type { Analysis, IndicatorEntry } from '../../../shared/lib/types'
+import { isSeries } from '../../../shared/lib/types'
 
 const STORAGE_KEY = 'graham_theses_v2'
 

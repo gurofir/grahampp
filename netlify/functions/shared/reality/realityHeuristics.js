@@ -7,7 +7,7 @@ const {
   netMarginBand,
   peBand,
   containsNarrativeToken,
-} = require('./sectorTaxonomy');
+} = require('../analysis/sectorTaxonomy');
 
 // ----- Indicator helpers ---------------------------------------------------
 

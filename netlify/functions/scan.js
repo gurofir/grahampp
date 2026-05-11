@@ -14,7 +14,7 @@
 //   exports.config = { schedule: '0 3 * * *' };
 // and set the schedule under [functions.scan] in netlify.toml.
 
-const { runScan } = require('./shared/scanRunner');
+const { runScan } = require('./shared/discovery/scanRunner');
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json',

@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { IndicatorEntry } from '../lib/types'
-import { isSeries } from '../lib/types'
+import type { IndicatorEntry } from '../../shared/lib/types'
+import { isSeries } from '../../shared/lib/types'
 import {
   canonicalTier,
   formatIndicatorValue,
   TIER_BADGE,
   TIER_COLORS,
   TIER_INDEX,
-} from '../lib/format'
+} from '../../shared/lib/format'
 
 interface IndicatorRowProps {
   indicator: IndicatorEntry
