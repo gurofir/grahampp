@@ -54,7 +54,7 @@ exports.handler = async (event) => {
       return errorResponse(404, 'tickerNotFound');
     }
 
-    const { indicators, intrinsicValue } = computeIndicators(raw);
+    const { indicators, intrinsicValue, insider } = computeIndicators(raw);
 
     const payload = buildPayload({
       ticker: raw.ticker,
@@ -80,6 +80,7 @@ exports.handler = async (event) => {
         sector: raw.sector,
         country: raw.country,
         earningsDate: raw.earningsDate,
+        insider,
       },
     };
     const structuralFindings = computeFindings({ ...realityInputBase, engines: {} });

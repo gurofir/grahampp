@@ -83,10 +83,14 @@
     "D5_evEbitda": "EV / EBITDA",
     "D6_priceSales": "מכפיל מכירות",
     "D7_marginOfSafety": "מרווח בטחון",
+    "D8_dividendYield": "תשואת דיבידנד",
+    "D9_payoutRatio": "יחס חלוקה",
+    "D10_dividendStreak": "רצף שנות דיבידנד",
     "E1_grossMarginStability": "יציבות מרווח גולמי",
     "E2_roicMoat": "ROIC (אישוש Moat)",
     "F1_roicTrend": "מגמת ROIC",
-    "F2_fcfConversionTrend": "מגמת המרת FCF"
+    "F2_fcfConversionTrend": "מגמת המרת FCF",
+    "F3_insiderSignal": "פעילות מבפנים (6 חודשים)"
   },
   "indicatorDesc": {
     "A1_revenueGrowth": "קצב גדילת ההכנסות שנה על שנה",
@@ -109,10 +113,14 @@
     "D5_evEbitda": "שווי כולל של העסק ביחס לרווח התפעולי",
     "D6_priceSales": "מכפיל המכירות — מחיר ביחס להכנסות",
     "D7_marginOfSafety": "הפרש בין המחיר הנוכחי לערך הפנימי המוערך",
+    "D8_dividendYield": "דיבידנד שנתי כאחוז מהמחיר הנוכחי",
+    "D9_payoutRatio": "האחוז מהרווח שמחולק כדיבידנד — בדיקת קיימות",
+    "D10_dividendStreak": "שנים רצופות של דיבידנד שאינו פוחת — סימן לעמידות",
     "E1_grossMarginStability": "יציבות המרווח הגולמי לאורך זמן",
     "E2_roicMoat": "ROIC כאישוש לקיומו של יתרון תחרותי",
     "F1_roicTrend": "כיוון השינוי בתשואה על ההון המושקע",
-    "F2_fcfConversionTrend": "כיוון השינוי באיכות המרת הרווח למזומן"
+    "F2_fcfConversionTrend": "כיוון השינוי באיכות המרת הרווח למזומן",
+    "F3_insiderSignal": "קנייה נטו של מבפנים בששת החודשים האחרונים כאחוז משווי השוק"
   },
   "scaleLabels": {
     "danger": "סכנה",

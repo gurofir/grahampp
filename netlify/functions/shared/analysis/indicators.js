@@ -108,6 +108,10 @@ function computeIndicators(raw) {
     priceSales = null,
     forwardEPS = null,
     longTermGrowthRate = null,
+    dividendYield = null,
+    payoutRatio = null,
+    dividendStreak = null,
+    insider = null,
   } = raw;
 
   // Per-year FCF
@@ -225,6 +229,13 @@ function computeIndicators(raw) {
     : null;
   const D7 = buildScalar('D7_marginOfSafety', 'D', marginOfSafety);
 
+  // D8/D9/D10 — Income & capital-return signals. Critical for value/income
+  // investors and for moat detection: a 25-year unbroken dividend streak is
+  // a stronger durability signal than any single-year ratio.
+  const D8 = buildScalar('D8_dividendYield', 'D', dividendYield);
+  const D9 = buildScalar('D9_payoutRatio', 'D', payoutRatio);
+  const D10 = buildScalar('D10_dividendStreak', 'D', dividendStreak);
+
   // ── E. Moat ──
   const E1 = buildScalar(
     'E1_grossMarginStability',
@@ -259,6 +270,14 @@ function computeIndicators(raw) {
     return buildScalar('F2_fcfConversionTrend', 'F', avg);
   })();
 
+  // F3 — Insider buying/selling signal. Measured as net insider $ over the
+  // last 6 months as a percentage of market cap. Cluster buys (multiple
+  // distinct insiders) are flagged separately in `insider.buyers` so the
+  // Reality Check layer can promote them to a tailwind. Single-insider
+  // selling is noisy (tax / personal liquidity) and intentionally not
+  // penalised by this scalar.
+  const F3 = buildScalar('F3_insiderSignal', 'F', insider?.score ?? null);
+
   const indicators = {
     A1_revenueGrowth: A1,
     A2_epsGrowth: A2,
@@ -280,10 +299,14 @@ function computeIndicators(raw) {
     D5_evEbitda: D5,
     D6_priceSales: D6,
     D7_marginOfSafety: D7,
+    D8_dividendYield: D8,
+    D9_payoutRatio: D9,
+    D10_dividendStreak: D10,
     E1_grossMarginStability: E1,
     E2_roicMoat: E2,
     F1_roicTrend: F1,
     F2_fcfConversionTrend: F2,
+    F3_insiderSignal: F3,
   };
 
   return {
@@ -295,6 +318,7 @@ function computeIndicators(raw) {
     },
     fcfArr,
     fcfConversions,
+    insider: insider ?? null,
   };
 }
 

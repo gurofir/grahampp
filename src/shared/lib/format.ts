@@ -86,10 +86,14 @@ const FORMAT_MAP: Record<string, FormatKind> = {
   D5_evEbitda: 'multiple',
   D6_priceSales: 'multiple',
   D7_marginOfSafety: 'signedPercent',
+  D8_dividendYield: 'percent',
+  D9_payoutRatio: 'percent',
+  D10_dividendStreak: 'plainNoSign',
   E1_grossMarginStability: 'signedPercent',
   E2_roicMoat: 'signedPercent',
   F1_roicTrend: 'signedPercent',
   F2_fcfConversionTrend: 'multiple',
+  F3_insiderSignal: 'signedPercent',
 }
 
 export function formatIndicatorValue(key: string, value: number | null | undefined): string {
@@ -187,7 +191,10 @@ export const INDICATORS_BY_SECTION: Record<'A' | 'B' | 'C' | 'D' | 'E' | 'F', st
     'D5_evEbitda',
     'D6_priceSales',
     'D7_marginOfSafety',
+    'D8_dividendYield',
+    'D9_payoutRatio',
+    'D10_dividendStreak',
   ],
   E: ['E1_grossMarginStability', 'E2_roicMoat'],
-  F: ['F1_roicTrend', 'F2_fcfConversionTrend'],
+  F: ['F1_roicTrend', 'F2_fcfConversionTrend', 'F3_insiderSignal'],
 }

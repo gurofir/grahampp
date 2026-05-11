@@ -506,6 +506,87 @@ const marginInflectionCheck = {
   },
 };
 
+// Insider cluster buying. Multiple distinct insiders (>=3) buying with their
+// own money in the same window is one of the most predictive equity signals.
+// Single-insider buys are noisier; we require a cluster to fire.
+const insiderClusterBuyingCheck = {
+  id: 'insider_cluster_buying',
+  dimension: 'insider_cluster_buying',
+  appliesTo: (input) => !!input.context?.insider,
+  evaluate: (input) => {
+    const ins = input.context.insider;
+    if (!ins || !ins.buyers) return [];
+    const netUsd = ins.netUsd ?? 0;
+    const score = ins.score; // net buy as % of market cap
+    if (ins.buyers >= 3 && netUsd > 0) {
+      const heavy = score != null && score > 0.05; // > 0.05% of market cap
+      return [{
+        dimension: 'insider_cluster_buying',
+        severity: heavy ? 'strong_tailwind' : 'tailwind',
+        evidence:
+          `${ins.buyers} insiders bought $${num1(netUsd / 1_000_000, 1)}M net over the last ` +
+          `6 months${score != null ? ` (${num1(score, 2)}% of market cap)` : ''} — cluster buy with own capital.`,
+        scoreDelta: heavy ? 1.2 : 0.8,
+        source: 'rule',
+      }];
+    }
+    return [];
+  },
+};
+
+// Yield trap. A very high dividend yield combined with a payout ratio that
+// already exceeds earnings is a classic dividend-cut warning. Cuts often
+// trigger 30-50% drawdowns even before fundamentals deteriorate.
+const yieldTrapCheck = {
+  id: 'yield_trap',
+  dimension: 'yield_trap',
+  appliesTo: () => true,
+  evaluate: (input) => {
+    const yld = latest(input.indicators?.D8_dividendYield);
+    const payout = latest(input.indicators?.D9_payoutRatio);
+    if (yld == null || payout == null) return [];
+    if (yld > 6 && payout > 80) {
+      return [{
+        dimension: 'yield_trap',
+        severity: payout > 100 ? 'severe' : 'warn',
+        evidence:
+          `Dividend yield ${pct(yld)} with payout ratio ${pct(payout)} — dividend looks ` +
+          `unsustainable; a cut would compress both yield and price.`,
+        scoreDelta: payout > 100 ? 1 : 0.7,
+        source: 'rule',
+      }];
+    }
+    return [];
+  },
+};
+
+// Dividend aristocrat / capital-return quality. A long unbroken streak of
+// non-decreasing dividends combined with a sustainable payout ratio is a
+// durability signal that doesn't show up in any single-year ratio.
+const capitalReturnQualityCheck = {
+  id: 'capital_return_quality',
+  dimension: 'capital_return_quality',
+  appliesTo: () => true,
+  evaluate: (input) => {
+    const streak = latest(input.indicators?.D10_dividendStreak);
+    const payout = latest(input.indicators?.D9_payoutRatio);
+    if (streak == null || streak < 10) return [];
+    const sustainable = payout == null || payout < 75;
+    if (!sustainable) return [];
+    const aristocrat = streak >= 25;
+    return [{
+      dimension: 'capital_return_quality',
+      severity: aristocrat ? 'strong_tailwind' : 'tailwind',
+      evidence:
+        `${Math.round(streak)} years of consecutive non-decreasing dividends` +
+        `${payout != null ? ` with payout ${pct(payout)}` : ''} — sustained capital-return ` +
+        `discipline through multiple cycles.`,
+      scoreDelta: aristocrat ? 1 : 0.6,
+      source: 'rule',
+    }];
+  },
+};
+
 // ----- Helpers -------------------------------------------------------------
 
 function engineSaid(input, which, decision) {
@@ -541,10 +622,13 @@ const REGISTRY = [
   dataFreshnessCheck,
   narrativeDependenceCheck,
   macroSensitivityCheck,
+  yieldTrapCheck,
   // tailwinds
   cyclicalBottomCheck,
   deLeveragingCheck,
   marginInflectionCheck,
+  insiderClusterBuyingCheck,
+  capitalReturnQualityCheck,
 ];
 
 const HARD_BLOCKER_DIMENSIONS = new Set([

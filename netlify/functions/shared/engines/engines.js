@@ -48,6 +48,10 @@ PILLAR 3 — Value with quality signal:
   D1_pe between 8 and 18, AND (B1_grossMargin > 35% OR B4_roic > 8%), AND no severe negative trend in F1_roicTrend.
   → Reasonably priced business with real, persistent profitability.
 
+Additional context that should INFORM (not gate) the decision:
+- D8_dividendYield, D9_payoutRatio, D10_dividendStreak: a long dividend streak (D10 ≥ 10) with a sustainable payout (D9 < 75%) is a durability signal that strengthens BUY conviction. A high yield (D8 > 6%) with payout > 80% is a yield-trap warning — downgrade confidence even if pillars hold.
+- F3_insiderSignal: positive values mean net insider buying (% of market cap, last 6 months). Cluster buying (already exposed via TAILWIND FINDINGS as 'insider_cluster_buying') is one of the strongest equity signals — let it raise confidence on a borderline BUY. Heavy net selling is noisier (tax / personal liquidity) so do not mechanically downgrade.
+
 OTHERWISE → WAIT.
 
 AVOID when ANY of these fire:

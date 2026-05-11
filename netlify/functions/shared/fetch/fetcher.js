@@ -23,20 +23,124 @@ const QUOTE_SUMMARY_MODULES = [
   'financialData',
   'calendarEvents',
   'assetProfile',
+  'insiderTransactions',
 ];
+
+// Bucket dividend payments by calendar year and return [{ year, total }] sorted
+// ascending. Yahoo's `historical` with events='dividends' returns one row per
+// payment date with `amount` (cash dividend per share). Special / one-time
+// dividends are included; for value/income screening that is the right
+// behaviour (a cut-then-special is still a streak break).
+function bucketAnnualDividends(events) {
+  if (!Array.isArray(events) || events.length === 0) return [];
+  const byYear = new Map();
+  for (const e of events) {
+    const amt = num(e?.amount ?? e?.dividends);
+    if (amt == null || amt <= 0) continue;
+    const d = e?.date instanceof Date ? e.date : new Date(e?.date);
+    if (Number.isNaN(d.getTime())) continue;
+    const y = d.getUTCFullYear();
+    byYear.set(y, (byYear.get(y) || 0) + amt);
+  }
+  return Array.from(byYear.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([year, total]) => ({ year, total }));
+}
+
+// Walk backwards from the most recent COMPLETED year (we ignore the current
+// year because the company may not have paid all four quarters yet) and
+// count years where the annual dividend total did not decrease vs the prior
+// year. A cut anywhere in the chain ends the streak.
+function dividendStreakYears(annual) {
+  if (!Array.isArray(annual) || annual.length === 0) return null;
+  const thisYear = new Date().getUTCFullYear();
+  // Drop the current (in-progress) year from the streak calculation.
+  const completed = annual.filter((a) => a.year < thisYear);
+  if (completed.length === 0) return 0;
+  let streak = 1;
+  for (let i = completed.length - 1; i > 0; i--) {
+    if (completed[i].total >= completed[i - 1].total) streak += 1;
+    else break;
+  }
+  return streak;
+}
+
+// Aggregate insider transactions over the last 6 months. Yahoo classifies
+// each transaction with a textual transactionText (e.g. "Purchase",
+// "Sale - Tax", "Conversion of Exercise of Derivative Security"). We only
+// count true open-market BUY/SELL transactions. A "cluster" is >=3 distinct
+// insiders buying within the window -- empirically the most predictive
+// pattern (single-insider buys are noisier).
+function summarizeInsiderTransactions(transactions, marketCap) {
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    return { netUsd: 0, buyers: 0, sellers: 0, score: null };
+  }
+  const cutoff = Date.now() - 6 * 30 * 86_400_000; // ~6 months
+  let buyUsd = 0;
+  let sellUsd = 0;
+  const buyers = new Set();
+  const sellers = new Set();
+  for (const t of transactions) {
+    const ts = t?.startDate instanceof Date ? t.startDate.getTime() : new Date(t?.startDate).getTime();
+    if (!Number.isFinite(ts) || ts < cutoff) continue;
+    const text = String(t?.transactionText || '').toLowerCase();
+    const value = num(t?.value) ?? 0;
+    if (value <= 0) continue;
+    const name = t?.filerName || t?.filerRelation || '';
+    if (text.includes('purchase') || text.includes('buy')) {
+      buyUsd += value;
+      if (name) buyers.add(name);
+    } else if (text.startsWith('sale') || text === 'sale') {
+      sellUsd += value;
+      if (name) sellers.add(name);
+    }
+    // Skip option exercises, gifts, tax withholding -- non-informative.
+  }
+  const netUsd = buyUsd - sellUsd;
+  // Score = net buying as a % of market cap, *100 to make it human-scale.
+  // Positive = net buying, negative = net selling. NULL when market cap is
+  // unknown so the indicator falls back to "no signal".
+  const score =
+    marketCap && marketCap > 0 ? (netUsd / marketCap) * 100 : null;
+  return { netUsd, buyers: buyers.size, sellers: sellers.size, score };
+}
 
 async function fetchFundamentals(ticker) {
   const periodStart = new Date();
   periodStart.setFullYear(periodStart.getFullYear() - 5);
   const period1 = periodStart.toISOString().split('T')[0];
 
-  const [quote, summary, fts] = await Promise.all([
+  // Pull dividend history alongside the existing batch so wall-clock cost
+  // doesn't grow. 10 years is enough to compute a meaningful streak; aristocrat
+  // companies (25+ year streaks) just cap out at the lookback window.
+  const divLookbackStart = new Date();
+  divLookbackStart.setFullYear(divLookbackStart.getFullYear() - 10);
+  const [quote, summary, fts, divChart] = await Promise.all([
     yahooFinance.quote(ticker),
     yahooFinance.quoteSummary(ticker, { modules: QUOTE_SUMMARY_MODULES }),
     yahooFinance
       .fundamentalsTimeSeries(ticker, { period1, module: 'all', type: 'annual' })
       .catch(() => []),
+    yahooFinance
+      .chart(ticker, {
+        period1: divLookbackStart,
+        period2: new Date(),
+        interval: '1mo',
+        events: 'div',
+      })
+      .catch(() => null),
   ]);
+  // chart() returns { events: { dividends: { '<ts>': { amount, date } } } }.
+  // Flatten to the same shape historical() used so downstream code is
+  // unchanged.
+  const divHistory = (() => {
+    const divs = divChart?.events?.dividends;
+    if (!divs || typeof divs !== 'object') return [];
+    return Object.values(divs).map((d) => ({
+      date: d?.date instanceof Date ? d.date : new Date(d?.date),
+      amount: typeof d?.amount === 'number' ? d.amount : null,
+    }));
+  })();
 
   const price = summary.price || {};
   const summaryDetail = summary.summaryDetail || {};
@@ -103,6 +207,35 @@ async function fetchFundamentals(ticker) {
     pctFromGrowth(financial.revenueGrowth) ??
     null;
 
+  // --- Dividends ----------------------------------------------------------
+  // dividendYield from Yahoo is a fraction (0.025 = 2.5%); convert to percent.
+  // payoutRatio is also a fraction; convert to percent. Both can be null for
+  // non-payers and we propagate that as null (no yield => no signal).
+  const dividendYield = (() => {
+    const y =
+      num(summaryDetail.dividendYield) ??
+      num(summaryDetail.trailingAnnualDividendYield) ??
+      null;
+    return y == null ? null : y * 100;
+  })();
+  const payoutRatio = (() => {
+    const p = num(summaryDetail.payoutRatio);
+    return p == null ? null : p * 100;
+  })();
+  const annualDividends = bucketAnnualDividends(divHistory);
+  const dividendStreak = dividendYield && dividendYield > 0
+    ? dividendStreakYears(annualDividends)
+    : 0;
+
+  // --- Insider transactions ----------------------------------------------
+  const insiderTx = summary.insiderTransactions?.transactions || [];
+  const marketCapRaw =
+    num(summaryDetail.marketCap) ??
+    num(price.marketCap) ??
+    num(keyStats.marketCap) ??
+    null;
+  const insider = summarizeInsiderTransactions(insiderTx, marketCapRaw);
+
   // Compute daily change directly from price + previousClose. Yahoo's
   // regularMarketChangePercent has inconsistent encoding (sometimes percent,
   // sometimes fraction); deriving it ourselves removes the ambiguity.
@@ -160,6 +293,10 @@ async function fetchFundamentals(ticker) {
     currentLiabilities,
     ebitda,
     earningsDate,
+    dividendYield,
+    payoutRatio,
+    dividendStreak,
+    insider,
   };
 }
 

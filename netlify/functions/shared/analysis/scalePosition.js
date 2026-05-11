@@ -245,6 +245,45 @@ const INDICATORS = {
       { tier: 'exceptional', min: 40, max: POS_INF, normMin: 40,  normMax: 80 },
     ],
   },
+  // Dividend yield (%). 0% = non-payer (not a danger, just no signal), 2-4%
+  // = healthy income payer, 4-6% = high yield, >6% = often a stress signal
+  // (price collapsed faster than dividend can be cut) so we flag it.
+  D8_dividendYield: {
+    direction: 'higher_better',
+    tiers: [
+      { tier: 'none',        min: NEG_INF, max: 0.5, normMin: 0,   normMax: 0.5 },
+      { tier: 'minimal',     min: 0.5, max: 2,      normMin: 0.5, normMax: 2 },
+      { tier: 'moderate',    min: 2,   max: 4,      normMin: 2,   normMax: 4 },
+      { tier: 'strong',      min: 4,   max: 6,      normMin: 4,   normMax: 6 },
+      // >6% becomes "exceptional" but flagged via Reality Check as potential
+      // distress (yield trap). The position score reflects "high".
+      { tier: 'exceptional', min: 6,   max: POS_INF, normMin: 6,  normMax: 12 },
+    ],
+  },
+  // Payout ratio (%). <30% = lots of room, 30-60% = sustainable, 60-80% =
+  // tight, >80% = unsustainable (cut likely). >100% = paying with debt.
+  D9_payoutRatio: {
+    direction: 'lower_better',
+    tiers: [
+      { tier: 'speculative', min: 100, max: POS_INF, normMin: 100, normMax: 200 },
+      { tier: 'expensive',   min: 80,  max: 100,    normMin: 80,  normMax: 100 },
+      { tier: 'acceptable',  min: 60,  max: 80,     normMin: 60,  normMax: 80 },
+      { tier: 'attractive',  min: 30,  max: 60,     normMin: 30,  normMax: 60 },
+      { tier: 'deep_value',  min: NEG_INF, max: 30, normMin: 0,   normMax: 30 },
+    ],
+  },
+  // Years of consecutive non-decreasing annual dividends. 0 = non-payer
+  // (no signal, neither good nor bad), 5+ = reliable payer, 25+ = aristocrat.
+  D10_dividendStreak: {
+    direction: 'higher_better',
+    tiers: [
+      { tier: 'none',        min: NEG_INF, max: 1,  normMin: 0,  normMax: 1 },
+      { tier: 'minimal',     min: 1,  max: 5,       normMin: 1,  normMax: 5 },
+      { tier: 'moderate',    min: 5,  max: 10,      normMin: 5,  normMax: 10 },
+      { tier: 'strong',      min: 10, max: 25,      normMin: 10, normMax: 25 },
+      { tier: 'exceptional', min: 25, max: POS_INF, normMin: 25, normMax: 50 },
+    ],
+  },
 
   // ── E. Moat ──────────────────────────────────────────────────────────────
   // Lower stdDev = more stable = better.
@@ -291,6 +330,20 @@ const INDICATORS = {
       { tier: 'acceptable',  min: 0.5,  max: 0.8,     normMin: 0.5,  normMax: 0.8 },
       { tier: 'strong',      min: 0.8,  max: 1.0,     normMin: 0.8,  normMax: 1.0 },
       { tier: 'exceptional', min: 1.0,  max: POS_INF, normMin: 1.0,  normMax: 2.0 },
+    ],
+  },
+  // Insider net buying as a percent of market cap over the last 6 months
+  // (negative = net selling). 0.01% of a large cap = millions of $ -- the
+  // bands here are deliberately tight because insider trades are large-$
+  // signals at any company size.
+  F3_insiderSignal: {
+    direction: 'higher_better',
+    tiers: [
+      { tier: 'danger',      min: NEG_INF, max: -0.05, normMin: -0.5, normMax: -0.05 },
+      { tier: 'weak',        min: -0.05, max: 0,      normMin: -0.05, normMax: 0 },
+      { tier: 'acceptable',  min: 0,    max: 0.01,    normMin: 0,    normMax: 0.01 },
+      { tier: 'strong',      min: 0.01, max: 0.05,    normMin: 0.01, normMax: 0.05 },
+      { tier: 'exceptional', min: 0.05, max: POS_INF, normMin: 0.05, normMax: 0.5 },
     ],
   },
 };

@@ -83,10 +83,14 @@
     "D5_evEbitda": "EV / EBITDA",
     "D6_priceSales": "P/S",
     "D7_marginOfSafety": "Margin of Safety",
+    "D8_dividendYield": "Dividend Yield",
+    "D9_payoutRatio": "Payout Ratio",
+    "D10_dividendStreak": "Dividend Streak (yrs)",
     "E1_grossMarginStability": "Gross Margin Stability",
     "E2_roicMoat": "ROIC (Moat lens)",
     "F1_roicTrend": "ROIC Trend",
-    "F2_fcfConversionTrend": "FCF Conversion Trend"
+    "F2_fcfConversionTrend": "FCF Conversion Trend",
+    "F3_insiderSignal": "Insider Signal (6m)"
   },
   "indicatorDesc": {
     "A1_revenueGrowth": "Year-over-year revenue growth rate",
@@ -109,10 +113,14 @@
     "D5_evEbitda": "Total enterprise value relative to operating profit",
     "D6_priceSales": "Price relative to revenue",
     "D7_marginOfSafety": "Gap between current price and estimated intrinsic value",
+    "D8_dividendYield": "Annual dividend as a percent of the current price",
+    "D9_payoutRatio": "Share of earnings paid out as dividends — sustainability check",
+    "D10_dividendStreak": "Years of consecutive non-decreasing annual dividends — durability signal",
     "E1_grossMarginStability": "Gross margin stability over time",
     "E2_roicMoat": "ROIC as confirmation of a competitive advantage",
     "F1_roicTrend": "Direction of change in return on invested capital",
-    "F2_fcfConversionTrend": "Direction of change in profit-to-cash quality"
+    "F2_fcfConversionTrend": "Direction of change in profit-to-cash quality",
+    "F3_insiderSignal": "Net insider buying over the last 6 months as a percent of market cap"
   },
   "scaleLabels": {
     "danger": "Danger",

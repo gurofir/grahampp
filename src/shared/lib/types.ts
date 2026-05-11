@@ -107,12 +107,15 @@ export type RiskDimension =
   | 'data_freshness'
   | 'growth_sustainability'
   | 'margin_durability'
+  | 'yield_trap'
   // Tailwind dimensions (positive context the static numbers may hide)
   | 'cyclical_bottom'
   | 'de_leveraging'
   | 'margin_inflection'
   | 'capex_investment_phase'
   | 'payout_discipline'
+  | 'insider_cluster_buying'
+  | 'capital_return_quality'
 
 export type FindingSeverity =
   | 'info'

@@ -23,10 +23,14 @@ const KEY_INDICATORS = [
   'D5_evEbitda',
   'D6_priceSales',
   'D7_marginOfSafety',
+  'D8_dividendYield',
+  'D9_payoutRatio',
+  'D10_dividendStreak',
   'E1_grossMarginStability',
   'E2_roicMoat',
   'F1_roicTrend',
   'F2_fcfConversionTrend',
+  'F3_insiderSignal',
 ];
 
 function isSeries(ind) {

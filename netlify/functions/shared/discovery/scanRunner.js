@@ -252,8 +252,8 @@ async function runScan(opts = {}) {
     try {
       const raw = await fetchFundamentals(ticker);
       if (!raw?.currentPrice || !raw?.revenues?.length) continue;
-      const { indicators, intrinsicValue, fcfArr } = computeIndicators(raw);
-      withIndicators.push({ ticker, raw, indicators, intrinsicValue, fcfArr });
+      const { indicators, intrinsicValue, fcfArr, insider } = computeIndicators(raw);
+      withIndicators.push({ ticker, raw, indicators, intrinsicValue, fcfArr, insider });
     } catch {
       // Skip ticker if Yahoo errored or data is incomplete.
     }
@@ -447,7 +447,7 @@ async function runScan(opts = {}) {
   };
 }
 
-async function analyzeOne({ ticker, raw, indicators, intrinsicValue }, ctx) {
+async function analyzeOne({ ticker, raw, indicators, intrinsicValue, insider }, ctx) {
   const { apiKey, model, lang } = ctx;
   try {
     const payload = buildPayload({
@@ -469,6 +469,7 @@ async function analyzeOne({ ticker, raw, indicators, intrinsicValue }, ctx) {
         sector: raw.sector,
         country: raw.country,
         earningsDate: raw.earningsDate,
+        insider,
       },
     };
     const structuralFindings = computeFindings({
