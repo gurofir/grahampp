@@ -30,6 +30,7 @@ const {
   deriveCTASub,
 } = require('../alignment/alignment');
 const { scoreSetup, detectSituationType } = require('./discoveryScoring');
+const { passesDryScreen } = require('./dryScreen');
 const { SCAN_UNIVERSE } = require('./universe');
 
 const yahooFinance = new YahooFinance({
@@ -251,13 +252,37 @@ async function runScan(opts = {}) {
     try {
       const raw = await fetchFundamentals(ticker);
       if (!raw?.currentPrice || !raw?.revenues?.length) continue;
-      const { indicators, intrinsicValue } = computeIndicators(raw);
-      withIndicators.push({ ticker, raw, indicators, intrinsicValue });
+      const { indicators, intrinsicValue, fcfArr } = computeIndicators(raw);
+      withIndicators.push({ ticker, raw, indicators, intrinsicValue, fcfArr });
     } catch {
       // Skip ticker if Yahoo errored or data is incomplete.
     }
   }
   log(`[scan] after_detection=${withIndicators.length}`);
+
+  // --- Step 3.3: Deterministic dry screen (no AI) --------------------------
+  // Apply Graham's own BUY criteria as deterministic code BEFORE spending
+  // any AI tokens. A ticker that fails prerequisites or fails ALL three
+  // pillars cannot become a Graham BUY -- the AI call would just return
+  // WAIT/AVOID. Drop them here. Typically narrows ~580 -> ~80-150.
+  const dryRejectReasons = {};
+  const screened = [];
+  for (const item of withIndicators) {
+    const result = passesDryScreen(item.indicators, item.fcfArr);
+    if (result.pass) {
+      screened.push(item);
+    } else {
+      const r = result.reason || 'unknown';
+      dryRejectReasons[r] = (dryRejectReasons[r] || 0) + 1;
+    }
+  }
+  const dryRejectSummary = Object.entries(dryRejectReasons)
+    .map(([r, n]) => `${r}=${n}`)
+    .join(' ');
+  log(
+    `[scan] after_dry_screen=${screened.length} ` +
+      `(rejected=${withIndicators.length - screened.length} · ${dryRejectSummary || 'none'})`,
+  );
 
   // --- Step 3.5: Load cached situations for incremental decision -----------
   // Pull every column we need to rebuild a refresh-only insert row without
@@ -303,11 +328,13 @@ async function runScan(opts = {}) {
   log(`[scan] existing_rows=${existingByTicker.size}`);
 
   // Partition: anything stale / price-shocked / freshly-reported goes to AI;
-  // everything else just gets a price refresh from the existing row.
+  // everything else just gets a price refresh from the existing row. Only
+  // dry-screen survivors are eligible -- everything else was already dropped
+  // because it could not become a Graham BUY.
   const toReanalyze = [];
   const toRefresh = [];
   const reasonCounts = { new: 0, stale: 0, price: 0, earnings: 0 };
-  for (const item of withIndicators) {
+  for (const item of screened) {
     const existing = existingByTicker.get(item.ticker);
     const reason = reanalyzeReason(item, existing);
     if (reason) {
