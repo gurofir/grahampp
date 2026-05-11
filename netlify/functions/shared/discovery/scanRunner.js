@@ -18,6 +18,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { fetchFundamentals } = require('../fetch/fetcher');
 const { computeIndicators } = require('../analysis/indicators');
 const { buildPayload, runAboutSummary } = require('../ai/aiPrompt');
+const { runStoryteller } = require('../ai/storyteller');
 const { runEngines } = require('../engines/engines');
 const { computeFindings, enforceHardBlockers } = require('../reality/realityCheck');
 const {
@@ -309,6 +310,24 @@ async function analyzeOne({ ticker, raw, indicators, intrinsicValue }, ctx) {
     );
     const grahamFinal = enforceHardBlockers(enginesResult.graham, grahamFindings);
     const marketFinal = enginesResult.market;
+
+    // Storyteller: plain-language hero summary. Non-fatal — falls back to
+    // analytical text on the card if missing. Keep it short so a 40-ticker
+    // batch stays within scan budget.
+    try {
+      const storyResult = await runStoryteller({
+        apiKey,
+        model,
+        graham: grahamFinal,
+        lang,
+        deadlineMs: 12000,
+      });
+      if (storyResult && storyResult.summary) {
+        grahamFinal.plainSummary = storyResult.summary;
+      }
+    } catch (stErr) {
+      console.error(`[scan] storyteller failed for ${ticker}:`, stErr && stErr.message);
+    }
 
     const setupType = deriveSetupType(grahamFinal.decision, marketFinal.decision);
     const alignment = deriveAlignment(grahamFinal.decision, marketFinal.decision);
