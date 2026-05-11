@@ -1,9 +1,22 @@
 'use strict';
 
-// S&P 500 constituent tickers (Berkshire-style "BRK-B", Brown-Forman "BF-B" etc.
-// converted to dash form for Yahoo Finance compatibility).
-// Source: https://github.com/datasets/s-and-p-500-companies (snapshot 2026-04).
-// Update quarterly when index reconstitutes.
+// Discovery Engine scan universe.
+//
+// Three layers, deduplicated at the bottom:
+//
+//   1. SP500_TICKERS         — current S&P 500 constituents (US large caps).
+//   2. FOREIGN_ADRS          — major non-US companies traded as ADRs on NYSE/NASDAQ
+//                              (TSM, ASML, ARM, BABA, NVO, etc.). These are NEVER
+//                              in the S&P 500 because the index is US-only.
+//   3. US_NON_SP500_NOTABLE  — popular US-listed mid/small caps that retail
+//                              investors actually watch but aren't (yet) in the
+//                              S&P 500 (NET, SNOW, AFRM, MSTR, etc.).
+//
+// The exported `SCAN_UNIVERSE` is the deduplicated union (~750 tickers).
+//
+// Update quarterly when the S&P 500 reconstitutes or popular new IPOs surface.
+// Source for S&P 500: https://github.com/datasets/s-and-p-500-companies (snapshot 2026-04).
+
 const SP500_TICKERS = [
   'MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES', 'AFL', 'A',
   'APD', 'ABNB', 'AKAM', 'ALB', 'ARE', 'ALGN', 'ALLE', 'LNT', 'ALL', 'GOOGL',
@@ -58,4 +71,236 @@ const SP500_TICKERS = [
   'ZBRA', 'ZBH', 'ZTS',
 ];
 
-module.exports = { SP500_TICKERS };
+// Major foreign companies that trade as ADRs on US exchanges. These are
+// NEVER in the S&P 500 because that index is US-headquartered only — yet
+// every retail investor watches them.
+const FOREIGN_ADRS = [
+  // ── Asia / China tech ─────────────────────────────────────────────
+  'TSM',    // Taiwan Semiconductor
+  'BABA',   // Alibaba
+  'JD',     // JD.com
+  'PDD',    // Pinduoduo / Temu
+  'BIDU',   // Baidu
+  'NTES',   // NetEase
+  'BILI',   // Bilibili
+  'IQ',     // iQiyi
+  'TCOM',   // Trip.com
+  'TME',    // Tencent Music
+  'YMM',    // Full Truck Alliance
+  // ── Asia / China EV ───────────────────────────────────────────────
+  'NIO',    // NIO
+  'LI',     // Li Auto
+  'XPEV',   // XPeng
+  // ── SE Asia / India internet ──────────────────────────────────────
+  'SE',     // Sea Limited (Singapore)
+  'GRAB',   // Grab (Singapore)
+  'CPNG',   // Coupang (Korea)
+  'MELI',   // MercadoLibre (Argentina/LatAm)
+  'NU',     // Nubank (Brazil)
+  // ── India ──────────────────────────────────────────────────────────
+  'INFY',   // Infosys
+  'WIT',    // Wipro
+  'IBN',    // ICICI Bank
+  'HDB',    // HDFC Bank
+  'RDY',    // Dr. Reddy's Labs
+  'TTM',    // Tata Motors
+  // ── Japan ──────────────────────────────────────────────────────────
+  'TM',     // Toyota
+  'HMC',    // Honda
+  'SONY',   // Sony Group
+  'NMR',    // Nomura Holdings
+  'MUFG',   // Mitsubishi UFJ Financial
+  'SMFG',   // Sumitomo Mitsui Financial
+  'MFG',    // Mizuho Financial
+  'NTT',    // Nippon Telegraph & Telephone
+  // ── Korea ──────────────────────────────────────────────────────────
+  'KB',     // KB Financial
+  'SHG',    // Shinhan Financial
+  'KEP',    // Korea Electric Power
+  'KT',     // KT Corporation
+  // ── Europe / tech & industrial ────────────────────────────────────
+  'ASML',   // ASML Holding (Netherlands)
+  'ARM',    // Arm Holdings (UK)
+  'SAP',    // SAP SE (Germany)
+  'STM',    // STMicroelectronics (France/Italy)
+  'NOK',    // Nokia (Finland)
+  'ERIC',   // Ericsson (Sweden)
+  'ABB',    // ABB Ltd (Switzerland)
+  'PHG',    // Philips (Netherlands)
+  'STLA',   // Stellantis (Netherlands)
+  'RACE',   // Ferrari (Italy)
+  // ── Europe / pharma & consumer ────────────────────────────────────
+  'NVO',    // Novo Nordisk (Denmark)
+  'NVS',    // Novartis (Switzerland)
+  'AZN',    // AstraZeneca (UK)
+  'GSK',    // GSK (UK)
+  'TEVA',   // Teva Pharmaceutical (Israel)
+  'BAYRY',  // Bayer (Germany)
+  'RHHBY',  // Roche Holding (Switzerland)
+  'GMAB',   // Genmab (Denmark)
+  'BUD',    // AB InBev (Belgium)
+  'DEO',    // Diageo (UK)
+  'UL',     // Unilever (UK)
+  'BTI',    // British American Tobacco (UK)
+  // ── Europe / banks ────────────────────────────────────────────────
+  'HSBC',   // HSBC Holdings (UK)
+  'BCS',    // Barclays (UK)
+  'UBS',    // UBS Group (Switzerland)
+  'ING',    // ING Groep (Netherlands)
+  'SAN',    // Banco Santander (Spain)
+  'BBVA',   // BBVA (Spain)
+  // ── Energy & materials ────────────────────────────────────────────
+  'BP',     // BP (UK)
+  'SHEL',   // Shell (UK)
+  'TTE',    // TotalEnergies (France)
+  'EQNR',   // Equinor (Norway)
+  'PBR',    // Petrobras (Brazil)
+  'PBR-A',  // Petrobras pref shares
+  'RIO',    // Rio Tinto (UK/Australia)
+  'BHP',    // BHP Group (Australia)
+  'VALE',   // Vale (Brazil)
+  'AEM',    // Agnico Eagle Mines (Canada)
+  'GOLD',   // Barrick Gold (Canada)
+  'KGC',    // Kinross Gold (Canada)
+  // ── Canada ─────────────────────────────────────────────────────────
+  'SHOP',   // Shopify
+  'RY',     // Royal Bank of Canada
+  'TD',     // Toronto-Dominion Bank
+  'BMO',    // Bank of Montreal
+  'BNS',    // Bank of Nova Scotia
+  'CM',     // Canadian Imperial Bank
+  'CNQ',    // Canadian Natural Resources
+  'ENB',    // Enbridge
+  'TRP',    // TC Energy
+  'BCE',    // BCE Inc
+  // ── LatAm / banks & telecom ───────────────────────────────────────
+  'ITUB',   // Itau Unibanco (Brazil)
+  'BBD',    // Banco Bradesco (Brazil)
+  'BSAC',   // Banco Santander Chile
+  'BCH',    // Banco de Chile
+  'BAP',    // Credicorp (Peru)
+  'GGB',    // Gerdau (Brazil)
+  // ── Israel / tech ─────────────────────────────────────────────────
+  'CHKP',   // Check Point Software
+  'NICE',   // Nice Ltd
+  'MNDY',   // Monday.com
+  'WIX',    // Wix.com
+  'CYBR',   // CyberArk
+  'FROG',   // JFrog
+  'ICL',    // ICL Group
+  // ── Telecom (other) ────────────────────────────────────────────────
+  'VOD',    // Vodafone (UK)
+  'TLK',    // PT Telkom Indonesia
+];
+
+// Popular US-listed mid/small caps that aren't (yet) in the S&P 500 but
+// retail investors actively trade them. Curated to stay within "Yahoo data
+// is reliable" zone — micro-caps with sparse fundamentals are excluded.
+const US_NON_SP500_NOTABLE = [
+  // ── SaaS / cloud ──────────────────────────────────────────────────
+  'NET',    // Cloudflare
+  'SNOW',   // Snowflake
+  'MDB',    // MongoDB
+  'ZS',     // Zscaler
+  'ZM',     // Zoom
+  'OKTA',   // Okta
+  'TEAM',   // Atlassian
+  'HUBS',   // HubSpot
+  'BILL',   // BILL Holdings
+  'ESTC',   // Elastic
+  'DOCN',   // DigitalOcean
+  'FSLY',   // Fastly
+  'TWLO',   // Twilio
+  'PATH',   // UiPath
+  'S',      // SentinelOne
+  'GTLB',   // GitLab
+  'DT',     // Dynatrace
+  'CFLT',   // Confluent
+  'BL',     // BlackLine
+  // ── Fintech / consumer fintech ────────────────────────────────────
+  'SOFI',   // SoFi Technologies
+  'AFRM',   // Affirm
+  'UPST',   // Upstart
+  'LMND',   // Lemonade
+  'MSTR',   // MicroStrategy (BTC proxy)
+  // ── Streaming / media / consumer internet ─────────────────────────
+  'SPOT',   // Spotify
+  'ROKU',   // Roku
+  'PINS',   // Pinterest
+  'SNAP',   // Snap
+  'RDDT',   // Reddit
+  'BMBL',   // Bumble
+  'MTCH',   // Match Group
+  // ── EV / clean energy ─────────────────────────────────────────────
+  'RIVN',   // Rivian
+  'LCID',   // Lucid Motors
+  'QS',     // QuantumScape
+  'CHPT',   // ChargePoint
+  'BLNK',   // Blink Charging
+  'PLUG',   // Plug Power
+  'BLDP',   // Ballard Power
+  'NOVA',   // Sunnova Energy
+  'RUN',    // Sunrun
+  'ENPH',   // Enphase Energy
+  // ── Crypto miners ─────────────────────────────────────────────────
+  'MARA',   // Marathon Digital
+  'RIOT',   // Riot Platforms
+  'CLSK',   // CleanSpark
+  'HUT',    // Hut 8
+  'IREN',   // IREN
+  // ── AI / data / robotics ──────────────────────────────────────────
+  'AI',     // C3.ai
+  'BBAI',   // BigBear.ai
+  'SOUN',   // SoundHound AI
+  'PATH',   // (dup safe — Set dedupes)
+  // ── Semiconductors not in S&P ─────────────────────────────────────
+  'AMBA',   // Ambarella
+  'POWI',   // Power Integrations
+  'CRDO',   // Credo Technology
+  'INDI',   // indie Semiconductor
+  // ── Biotech / healthcare ──────────────────────────────────────────
+  'TDOC',   // Teladoc
+  'BEAM',   // Beam Therapeutics
+  'EDIT',   // Editas Medicine
+  'CRSP',   // CRISPR Therapeutics
+  'NTLA',   // Intellia Therapeutics
+  'ARWR',   // Arrowhead Pharma
+  'AXSM',   // Axsome Therapeutics
+  'BMRN',   // BioMarin
+  'EXEL',   // Exelixis
+  'IONS',   // Ionis Pharmaceuticals
+  'SRPT',   // Sarepta Therapeutics
+  // ── Travel / experiences ──────────────────────────────────────────
+  'TRIP',   // TripAdvisor
+  // ── Consumer / commerce ───────────────────────────────────────────
+  'PTON',   // Peloton
+  'WING',   // Wingstop
+  'SHAK',   // Shake Shack
+  'REVG',   // REV Group
+  'RVLV',   // Revolve Group
+  // ── Cannabis ──────────────────────────────────────────────────────
+  'TLRY',   // Tilray Brands
+  'CGC',    // Canopy Growth
+  // ── Gaming / digital ──────────────────────────────────────────────
+  'DKNG',   // DraftKings
+  'PENN',   // Penn Entertainment
+  'RBLX',   // Roblox
+  'U',      // Unity Software
+  // ── Industrials / niche ───────────────────────────────────────────
+  'JOBY',   // Joby Aviation
+  'ACHR',   // Archer Aviation
+];
+
+// Deduplicate at the bottom — handles overlap (e.g. when a non-S&P name
+// like ENPH or DKNG migrates into the index, it's already in SP500_TICKERS
+// and the Set drops the duplicate).
+const SCAN_UNIVERSE = Array.from(
+  new Set([...SP500_TICKERS, ...FOREIGN_ADRS, ...US_NON_SP500_NOTABLE]),
+);
+
+module.exports = {
+  SCAN_UNIVERSE,
+  SP500_TICKERS,
+  FOREIGN_ADRS,
+  US_NON_SP500_NOTABLE,
+};

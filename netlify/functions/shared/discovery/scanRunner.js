@@ -5,7 +5,7 @@
 //   - scripts/run-scan.js        (standalone Node CLI, used by GitHub Actions cron)
 //
 // Pipeline:
-//   1. Load S&P500 universe
+//   1. Load scan universe (S&P 500 + foreign ADRs + popular non-S&P US names)
 //   2. Fast filter via cheap Yahoo quote/quoteSummary calls (parallel batches)
 //   3. Compute full indicators on candidates
 //   4. Run Graham + Market engines (with Reality Check) in parallel batches
@@ -29,7 +29,7 @@ const {
   deriveCTASub,
 } = require('../alignment/alignment');
 const { scoreSetup, detectSituationType } = require('./discoveryScoring');
-const { SP500_TICKERS } = require('./universe');
+const { SCAN_UNIVERSE } = require('./universe');
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey', 'ripHistorical'],
@@ -40,9 +40,10 @@ const FAST_BATCH_DELAY_MS = 200;
 const AI_BATCH = 5;
 const AI_BATCH_DELAY_MS = 500;
 // Hard cap on AI analyses per scan. Keeps a single nightly run under both the
-// cost budget (~$0.20-0.40) and the GitHub Actions wall-clock limit. If the
-// strict filter still leaves more than 25 candidates we just take the first 25.
-const AI_CANDIDATE_CAP = 25;
+// cost budget (~$0.10-0.20) and the GitHub Actions wall-clock limit. With the
+// expanded universe (~683 tickers) the strict fast filter typically lets
+// through ~30-45 candidates; we cap at 40 to keep the run bounded.
+const AI_CANDIDATE_CAP = 40;
 const FEATURED_LIMIT = 7;
 const TTL_HOURS = 24;
 
@@ -123,7 +124,7 @@ async function runScan(opts = {}) {
   const supabaseKey = opts.supabaseKey || process.env.SUPABASE_SERVICE_KEY;
   const universe = Array.isArray(opts.universe) && opts.universe.length
     ? opts.universe
-    : SP500_TICKERS;
+    : SCAN_UNIVERSE;
 
   if (!apiKey) {
     return { ok: false, error: 'missing_anthropic_key' };
