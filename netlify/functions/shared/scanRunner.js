@@ -294,7 +294,7 @@ async function analyzeOne({ ticker, raw, indicators, intrinsicValue }, ctx) {
         apiKey,
         model,
         text: raw.businessSummary,
-        deadlineMs: 15000,
+        deadlineMs: 18000,
       }).catch(() => ''),
     ]);
     if (!enginesResult.graham || !enginesResult.market) return null;

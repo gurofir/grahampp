@@ -457,43 +457,40 @@ async function runAiInterpretation({ apiKey, model, payload, lang, deadlineMs = 
   const insightsPrompt = buildInsightsPrompt({ payload, lang });
   const verdictPrompt = buildVerdictPrompt({ payload, lang });
   const hasBusinessText = typeof payload.businessSummary === 'string' && payload.businessSummary.trim();
-  const aboutPrompt = hasBusinessText
-    ? buildAboutPrompt({ text: payload.businessSummary })
-    : null;
 
-  const [sectionResult, insightsResult, verdictResult, aboutResult] = await Promise.all([
+  // Run all 4 calls in parallel. The About summary uses runAboutSummary so it
+  // gets the built-in single retry on transient Anthropic failures (529, parse
+  // errors, deadline). Other calls keep their existing single-shot behaviour.
+  const [sectionResult, insightsResult, verdictResult, aboutDescription] = await Promise.all([
     streamWithDeadline({ client, model, prompt: sectionPrompt, maxTokens: 2000, deadlineMs })
       .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message })),
     streamWithDeadline({ client, model, prompt: insightsPrompt, maxTokens: 2000, deadlineMs })
       .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message })),
     streamWithDeadline({ client, model, prompt: verdictPrompt, maxTokens: 1200, deadlineMs })
       .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message })),
-    aboutPrompt
-      ? streamWithDeadline({ client, model, prompt: aboutPrompt, maxTokens: 400, deadlineMs })
-          .catch((err) => ({ text: '', stoppedEarly: true, elapsedMs: 0, error: err && err.message }))
-      : Promise.resolve({ text: '', stoppedEarly: false, elapsedMs: 0 }),
+    hasBusinessText
+      ? runAboutSummary({ apiKey, model, text: payload.businessSummary, deadlineMs: Math.min(deadlineMs, 18000) })
+          .catch(() => '')
+      : Promise.resolve(''),
   ]);
 
   const section = normalizeSection(tryParseJson(sectionResult.text));
   const indicatorInsights = normalizeInsights(tryParseJson(insightsResult.text), payload.indicators);
   const verdictData = normalizeVerdict(tryParseJson(verdictResult.text));
-  const aboutDescription = normalizeAbout(tryParseJson(aboutResult.text));
 
   const totalLen =
     sectionResult.text.length +
     insightsResult.text.length +
     verdictResult.text.length +
-    aboutResult.text.length;
+    (aboutDescription ? aboutDescription.length : 0);
   const anyEarly =
     sectionResult.stoppedEarly ||
     insightsResult.stoppedEarly ||
-    verdictResult.stoppedEarly ||
-    aboutResult.stoppedEarly;
+    verdictResult.stoppedEarly;
   const maxMs = Math.max(
     sectionResult.elapsedMs,
     insightsResult.elapsedMs,
     verdictResult.elapsedMs,
-    aboutResult.elapsedMs,
   );
 
   if (!section && Object.keys(indicatorInsights).length === 0 && !verdictData && !aboutDescription) {
@@ -528,7 +525,7 @@ async function runAiInterpretation({ apiKey, model, payload, lang, deadlineMs = 
       section: { len: sectionResult.text.length, stoppedEarly: sectionResult.stoppedEarly, ms: sectionResult.elapsedMs },
       insights: { len: insightsResult.text.length, stoppedEarly: insightsResult.stoppedEarly, ms: insightsResult.elapsedMs, count: Object.keys(indicatorInsights).length },
       verdict: { len: verdictResult.text.length, stoppedEarly: verdictResult.stoppedEarly, ms: verdictResult.elapsedMs, ok: !!verdictData },
-      about: { len: aboutResult.text.length, stoppedEarly: aboutResult.stoppedEarly, ms: aboutResult.elapsedMs, ok: !!aboutDescription },
+      about: { ok: !!aboutDescription, len: aboutDescription ? aboutDescription.length : 0 },
     },
   };
 }
@@ -536,18 +533,39 @@ async function runAiInterpretation({ apiKey, model, payload, lang, deadlineMs = 
 // Standalone helper for the Discovery scan pipeline: generates ONLY the
 // 2-3 sentence "About" summary so cached scan results can show it without
 // running the full 3-prompt interpretation chain.
-async function runAboutSummary({ apiKey, model, text, deadlineMs = 15000 }) {
+//
+// Retries once on transient failures (Anthropic 529 overloaded, malformed
+// JSON, deadline exceeded). One retry roughly doubles success rate during
+// a parallel batch (5 tickers × 2 calls = 10 concurrent requests) without
+// meaningfully increasing cost (~$0.001 per retry).
+async function runAboutSummary({ apiKey, model, text, deadlineMs = 18000 }) {
   if (typeof text !== 'string' || !text.trim()) return '';
   const client = new Anthropic({ apiKey, timeout: deadlineMs + 1000, maxRetries: 0 });
-  try {
+  const prompt = buildAboutPrompt({ text });
+
+  const attempt = async () => {
     const result = await streamWithDeadline({
       client,
       model,
-      prompt: buildAboutPrompt({ text }),
+      prompt,
       maxTokens: 400,
       deadlineMs,
     });
     return normalizeAbout(tryParseJson(result.text));
+  };
+
+  try {
+    const first = await attempt();
+    if (first) return first;
+  } catch {
+    /* fall through to retry */
+  }
+
+  // Brief backoff to let any rate-limit / overload spike clear.
+  await new Promise((r) => setTimeout(r, 600));
+
+  try {
+    return await attempt();
   } catch {
     return '';
   }
