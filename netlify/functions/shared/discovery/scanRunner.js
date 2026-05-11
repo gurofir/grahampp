@@ -87,24 +87,30 @@ async function quickFetch(ticker) {
   }
 }
 
-// Strict filter: a ticker must show BOTH a strong value signal AND a quality
-// signal to make it through. The previous OR-chain let through ~10% of the
-// universe; with this AND-pair we expect ~5% (~25 candidates) which keeps the
-// AI batch under the cost/latency budget.
+// Calibrated filter for the expanded ~683-ticker universe (S&P 500 + ADRs +
+// US non-S&P notables). The previous strict AND-pair let through only ~10
+// candidates; we want ~40 (the AI cap) so Graham has a real shortlist to
+// evaluate. Strategy:
+//   1. Hard balance-sheet rejects (debt/equity, P/E speculative cap).
+//   2. EITHER a value signal OR a quality signal (was AND).
+//   3. Missing-data leniency: a ticker isn't dropped just because Yahoo
+//      didn't return one of grossMargin / roic / fcfYield -- otherwise ADRs
+//      and financials get unfairly excluded.
 function passesFilter(q) {
   if (!q || !q.currentPrice || q.currentPrice <= 0) return false;
   if (q.debtEquity != null && q.debtEquity > 3) return false;
-  if (q.peRatio != null && q.peRatio > 30) return false;
+  if (q.peRatio != null && q.peRatio > 35) return false;
 
-  const strongValue =
-    (q.peRatio != null && q.peRatio > 0 && q.peRatio < 15) ||
-    (q.fcfYield != null && q.fcfYield > 7);
+  const valueSignal =
+    (q.peRatio != null && q.peRatio > 0 && q.peRatio < 22) ||
+    (q.fcfYield != null && q.fcfYield > 4);
 
   const qualitySignal =
-    (q.grossMargin != null && q.grossMargin > 0.40) ||
-    (q.roic != null && q.roic > 0.12);
+    (q.grossMargin != null && q.grossMargin > 0.30) ||
+    (q.roic != null && q.roic > 0.08);
 
-  return strongValue && qualitySignal;
+  // Either signal qualifies; Graham's deeper criteria still gate the BUY.
+  return valueSignal || qualitySignal;
 }
 
 function pause(ms) {
