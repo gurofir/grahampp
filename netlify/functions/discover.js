@@ -66,22 +66,29 @@ exports.handler = async (event) => {
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
-  // Always return the full set (capped at 50). The UI slices to 3 by default
-  // and expands inline, so a single round-trip is enough.
+  // Safety cap on the wire size. The scoring + threshold below typically
+  // produce 8-25 items on a normal day; the UI slices to its own visible
+  // count and expands inline.
   const limit = 50;
 
-  // Discovery feed is Graham-led: a situation only surfaces if Graham itself
-  // says BUY. Market-only BUYs (market_leading setup) are intentionally
-  // hidden — if our conservative skeptic doesn't agree, it's not actionable.
+  // Discovery feed is Graham-led BUT no longer hard-filters to BUY only --
+  // a high-conviction WAIT (score reflects confidence, fragility, tailwinds,
+  // alignment) can be more interesting than a fragile BUY. The interesting-
+  // situation score handles ranking; we just enforce a quality floor here:
+  //   * graham_decision != AVOID  (AVOIDs are not actionable for the feed)
+  //   * score >= MIN_INTERESTING  (drops blocked items, low-conviction
+  //     WAITs, and unstable BUYs which all get score < ~30)
   // The full scan still keeps every analysis in the DB so manual searches
   // for those tickers still hit the 6h cache.
+  const MIN_INTERESTING = 50;
   try {
     const nowIso = new Date().toISOString();
     const { data: situations, error } = await supabase
       .from('situations')
       .select(SELECT_FIELDS)
       .gte('expires_at', nowIso)
-      .eq('graham_decision', 'BUY')
+      .neq('graham_decision', 'AVOID')
+      .gte('score', MIN_INTERESTING)
       .order('score', { ascending: false })
       .limit(limit);
 

@@ -196,7 +196,10 @@
       "de_leveraging": "De-leveraging",
       "margin_inflection": "Margin inflection",
       "capex_investment_phase": "Investment phase",
-      "payout_discipline": "Capital discipline"
+      "payout_discipline": "Capital discipline",
+      "yield_trap": "Yield trap risk",
+      "insider_cluster_buying": "Insider cluster buy",
+      "capital_return_quality": "Dividend aristocrat"
     }
   },
   "plain": {
@@ -316,16 +319,20 @@
   },
   "discovery": {
     "headerTitle": "Graham scanned the market",
-    "foundOne": "Found one interesting situation",
-    "foundMany": "Found {{count}} interesting situations",
+    "foundOne": "1 interesting situation today",
+    "foundMany": "{{count}} interesting situations today",
     "scannedSummary": "from {{universe}} stocks scanned",
-    "lastScanJustNow": "Last scan just now",
-    "lastScanMinutes": "Last scan {{minutes}} minutes ago",
-    "lastScanHours": "Last scan {{hours}} hours ago",
-    "lastScanYesterday": "Last scan yesterday",
-    "lastScanDays": "Last scan {{days}} days ago",
+    "scannedLabel": "Scanned",
+    "universeContext": "from {{universe}} screened",
+    "countBuys": "BUYs",
+    "countWatching": "watching",
+    "lastScanJustNow": "just now",
+    "lastScanMinutes": "{{minutes}}m ago",
+    "lastScanHours": "{{hours}}h ago",
+    "lastScanYesterday": "yesterday",
+    "lastScanDays": "{{days}}d ago",
     "interestingSituations": "Interesting situations",
-    "showMore": "Show {{count}} more situations",
+    "showMore": "Show {{count}} more",
     "showLess": "Show fewer",
     "search": "Or search a ticker manually",
     "noSituations": "Graham didn't find interesting situations in the last scan",
@@ -335,7 +342,12 @@
     "fromCacheMinutes": "Analysis from nightly scan · updated {{minutes}} min ago",
     "fromCacheHours": "Analysis from nightly scan · updated {{hours}} hr ago",
     "refresh": "Refresh",
-    "refreshing": "Refreshing..."
+    "refreshing": "Refreshing...",
+    "confidence": {
+      "high": "High conviction",
+      "medium": "Medium conviction",
+      "low": "Low conviction"
+    }
   },
   "situationTypes": {
     "value_opportunity": "Value Opportunity",

@@ -90,8 +90,103 @@ function pick(map, lang, key) {
   return dict[key] || dict.neutral;
 }
 
-function deriveInsight(setupType, lang) {
+// Truncate a string at the nearest word boundary so insights never look
+// chopped mid-word in the list.
+function softTruncate(text, maxChars) {
+  if (typeof text !== 'string') return null;
+  const trimmed = text.trim();
+  if (trimmed.length <= maxChars) return trimmed;
+  const head = trimmed.slice(0, maxChars);
+  const lastSpace = head.lastIndexOf(' ');
+  return (lastSpace > maxChars * 0.6 ? head.slice(0, lastSpace) : head).replace(/[\s.,;:]+$/, '') + '…';
+}
+
+// The list-row insight should be the actual analytical thesis, not a
+// boilerplate sentence keyed off setup type. Priority order:
+//   1. Graham's thesis -- always one sentence with at least one number.
+//   2. Graham's counter-thesis summary -- the "what could break this"
+//      framing; useful when the thesis itself was missing.
+//   3. Generic per-setup-type fallback (legacy behaviour) so we never
+//      end up with an empty string.
+function deriveInsight(setupType, lang, grahamFinal) {
+  const thesis = softTruncate(grahamFinal?.thesis, 140);
+  if (thesis) return thesis;
+  const counterSummary = softTruncate(grahamFinal?.counter?.summary, 140);
+  if (counterSummary) return counterSummary;
   return pick(INSIGHTS, lang, setupType);
+}
+
+// Surface ONE primary finding (tailwind for BUYs, headwind for WAIT/AVOID)
+// so the list row can show a single sharp chip ("insider cluster buy",
+// "leverage warning", etc.) instead of forcing the user to tap through
+// to read the full panel.
+//
+// The finding object format matches realityCheck output:
+//   { dimension, severity, evidence, scoreDelta, source }
+const TAILWIND_SEVERITIES = new Set(['tailwind', 'strong_tailwind']);
+
+function derivePrimaryFinding(grahamFinal) {
+  const findings = Array.isArray(grahamFinal?.findings) ? grahamFinal.findings : [];
+  if (findings.length === 0) return null;
+  const decision = grahamFinal?.decision;
+  const wantTailwind = decision === 'BUY';
+  const matching = findings.filter((f) =>
+    wantTailwind ? TAILWIND_SEVERITIES.has(f.severity) : !TAILWIND_SEVERITIES.has(f.severity),
+  );
+  // If no matching-direction finding exists, fall back to whichever exists
+  // -- a BUY with only mild headwinds is still informative for triage.
+  const pool = matching.length > 0 ? matching : findings;
+  // findings[] is already severity-sorted by realityCheck.enforceHardBlockers,
+  // so the first element is the most material.
+  const top = pool[0];
+  if (!top) return null;
+  return {
+    dimension: top.dimension,
+    severity: top.severity,
+    isTailwind: TAILWIND_SEVERITIES.has(top.severity),
+  };
+}
+
+// "Interesting situation" score: a single 0..130 number used to sort the
+// Discovery list. Replaces the older crude 0..200 scoreSetup that only
+// looked at decision + confidence and treated every BUY equally.
+//
+// Composition:
+//   decisionWeight  -- BUY:100, WAIT:40, AVOID:0  (AVOID is excluded
+//                      upstream but kept here so the function is total).
+//   confidenceMul   -- High:1.0, Medium:0.7, Low:0.4
+//   fragilityMul    -- robust:1.0, moderate:0.85, fragile:0.5,
+//                      unstable:0.2  (unstable also filtered upstream).
+//   tailwindBonus   -- +5 per tailwind, capped at +20.
+//   alignmentBonus  -- +10 if Graham and Market agree on the direction.
+//   blockedFactor   -- 0.0 when graham.blocked === true (hard blocker
+//                      override active). This forces blocked items to
+//                      the bottom even if everything else looks fine.
+const DECISION_WEIGHT = { BUY: 100, WAIT: 40, AVOID: 0 };
+const CONFIDENCE_MUL = { High: 1.0, Medium: 0.7, Low: 0.4 };
+const FRAGILITY_MUL = { robust: 1.0, moderate: 0.85, fragile: 0.5, unstable: 0.2 };
+
+function deriveInterestingScore(grahamFinal, marketFinal) {
+  const dec = grahamFinal?.decision || 'WAIT';
+  const conf = grahamFinal?.confidence || 'Low';
+  const frag = grahamFinal?.fragilityBand || 'moderate';
+  const blocked = grahamFinal?.blocked === true;
+
+  const base = (DECISION_WEIGHT[dec] ?? 40)
+    * (CONFIDENCE_MUL[conf] ?? 0.4)
+    * (FRAGILITY_MUL[frag] ?? 0.85);
+
+  const findings = Array.isArray(grahamFinal?.findings) ? grahamFinal.findings : [];
+  const tailwindCount = findings.filter((f) => TAILWIND_SEVERITIES.has(f.severity)).length;
+  const tailwindBonus = Math.min(20, tailwindCount * 5);
+
+  const alignmentBonus =
+    grahamFinal?.decision && marketFinal?.decision && grahamFinal.decision === marketFinal.decision
+      ? 10
+      : 0;
+
+  const score = (base + tailwindBonus + alignmentBonus) * (blocked ? 0 : 1);
+  return Math.round(score);
 }
 
 function deriveSuggestedAction(setupType, lang) {
@@ -184,6 +279,8 @@ module.exports = {
   deriveAlignment,
   deriveSetupType,
   deriveInsight,
+  derivePrimaryFinding,
+  deriveInterestingScore,
   deriveSuggestedAction,
   deriveGrahamLedAction,
   deriveCTALabel,

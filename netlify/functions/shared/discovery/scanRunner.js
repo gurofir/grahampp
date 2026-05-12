@@ -25,6 +25,8 @@ const {
   deriveAlignment,
   deriveSetupType,
   deriveInsight,
+  derivePrimaryFinding,
+  deriveInterestingScore,
   deriveGrahamLedAction,
   deriveCTALabel,
   deriveCTASub,
@@ -527,11 +529,24 @@ async function analyzeOne({ ticker, raw, indicators, intrinsicValue, insider }, 
 
     const setupType = deriveSetupType(grahamFinal.decision, marketFinal.decision);
     const alignment = deriveAlignment(grahamFinal.decision, marketFinal.decision);
-    const insight = deriveInsight(setupType, lang);
+    // Insight now uses the actual Graham thesis (1 sentence with numbers)
+    // instead of a generic per-setup-type sentence. Falls back to setup
+    // template only when Graham produced no thesis.
+    const insight = deriveInsight(setupType, lang, grahamFinal);
+    // Primary finding (top tailwind for BUYs, top headwind otherwise) is
+    // surfaced as a chip on the list row. May be null when Reality Check
+    // produced no notable findings -- a clean BUY is informative on its own.
+    const primaryFinding = derivePrimaryFinding(grahamFinal);
     const suggestedAction = deriveGrahamLedAction(grahamFinal, marketFinal, lang);
     const ctaLabel = deriveCTALabel(setupType, lang);
     const ctaSub = deriveCTASub(setupType, lang);
-    const score = scoreSetup(setupType, grahamFinal.confidence, marketFinal.confidence);
+    // interestingScore replaces the older crude scoreSetup (which only
+    // looked at decision + confidence). It now factors in fragility,
+    // tailwind count, alignment, and zeros-out hard-blocked items.
+    const score = deriveInterestingScore(grahamFinal, marketFinal);
+    // Keep the legacy score on the row too, for backward compatibility
+    // with any consumer that depended on the 0..200 range.
+    const legacyScore = scoreSetup(setupType, grahamFinal.confidence, marketFinal.confidence);
     const situationType = detectSituationType(indicators);
     const expiresAt = new Date(Date.now() + TTL_HOURS * 3600_000).toISOString();
     const fcfYieldInd = indicators.D4_fcfYield;

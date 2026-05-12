@@ -196,7 +196,10 @@
       "de_leveraging": "הפחתת מינוף",
       "margin_inflection": "הפיכת מרווחים",
       "capex_investment_phase": "שלב השקעה",
-      "payout_discipline": "משמעת תגמול"
+      "payout_discipline": "משמעת תגמול",
+      "yield_trap": "סיכון מלכודת תשואה",
+      "insider_cluster_buying": "קנייה מרוכזת מבפנים",
+      "capital_return_quality": "אריסטוקרט דיבידנד"
     }
   },
   "plain": {
@@ -316,16 +319,20 @@
   },
   "discovery": {
     "headerTitle": "גרהם סרק את השוק",
-    "foundOne": "מצא סיטואציה אחת מעניינת",
-    "foundMany": "מצא {{count}} סיטואציות מעניינות",
+    "foundOne": "סיטואציה אחת מעניינת היום",
+    "foundMany": "{{count}} סיטואציות מעניינות היום",
     "scannedSummary": "מתוך {{universe}} מניות שנסרקו",
-    "lastScanJustNow": "סריקה אחרונה הרגע",
-    "lastScanMinutes": "סריקה אחרונה לפני {{minutes}} דקות",
-    "lastScanHours": "סריקה אחרונה לפני {{hours}} שעות",
-    "lastScanYesterday": "סריקה אחרונה אתמול",
-    "lastScanDays": "סריקה אחרונה לפני {{days}} ימים",
+    "scannedLabel": "נסרק",
+    "universeContext": "מתוך {{universe}} מניות",
+    "countBuys": "קניות",
+    "countWatching": "במעקב",
+    "lastScanJustNow": "כרגע",
+    "lastScanMinutes": "לפני {{minutes}} ד׳",
+    "lastScanHours": "לפני {{hours}} ש׳",
+    "lastScanYesterday": "אתמול",
+    "lastScanDays": "לפני {{days}} ימים",
     "interestingSituations": "סיטואציות מעניינות",
-    "showMore": "עוד {{count}} סיטואציות מהסריקה",
+    "showMore": "הצג עוד {{count}}",
     "showLess": "הצג פחות",
     "search": "או חפש מניה ידנית",
     "noSituations": "גרהם לא מצא סיטואציות מעניינות בסריקה האחרונה",
@@ -335,7 +342,12 @@
     "fromCacheMinutes": "ניתוח מהסריקה הלילית · עודכן לפני {{minutes}} דקות",
     "fromCacheHours": "ניתוח מהסריקה הלילית · עודכן לפני {{hours}} שעות",
     "refresh": "רענן",
-    "refreshing": "מרענן..."
+    "refreshing": "מרענן...",
+    "confidence": {
+      "high": "ביטחון גבוה",
+      "medium": "ביטחון בינוני",
+      "low": "ביטחון נמוך"
+    }
   },
   "situationTypes": {
     "value_opportunity": "הזדמנות ערך",
