@@ -1,0 +1,60 @@
+name: discovery-scan-full
+
+# Weekly full-universe Discovery Engine sweep.
+#
+# The nightly job (scan.yml) only processes the "watchlist" -- the top scorers
+# from the previous scan plus any ticker analyzed within the last 7 days. That
+# keeps daily compute focused and cheap, but means new opportunities outside
+# the watchlist would never get re-evaluated.
+#
+# This weekly job rebuilds the watchlist composition from scratch by scanning
+# the entire SCAN_UNIVERSE (~683 tickers). After it runs, the next nightly
+# inherits a fresh top-150 list.
+#
+# Cost / time per run:
+#   - ~10-20 minutes wall clock
+#   - ~$0.30-$1.00 in Anthropic API spend (most tickers hit the incremental
+#     cache and skip AI; only stale / price-shocked / freshly-reported tickers
+#     re-run the full Graham + Market + Storyteller + About pipeline).
+
+on:
+  schedule:
+    # 02:00 UTC every Sunday. Runs ~1h before the regular Sunday nightly so
+    # that nightly Sunday inherits the fresh watchlist immediately.
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    # Allows manual "Run workflow" from the Actions tab.
+
+concurrency:
+  # Share the same group as the nightly so we never run both at once.
+  group: discovery-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      SCAN_LANG: en
+      SCAN_MODE: full
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Node 22+ is required by @supabase/realtime-js (native WebSocket)
+          # and recommended by yahoo-finance2.
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run full-universe discovery scan
+        run: node scripts/run-scan.cjs

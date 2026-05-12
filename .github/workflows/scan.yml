@@ -1,31 +1,44 @@
 name: discovery-scan
 
-# Nightly Discovery Engine scan: scans the S&P 500 universe, runs Graham +
-# Market engines on filtered candidates, and writes the resulting situations
-# to Supabase. The frontend then reads them via /.netlify/functions/discover.
+# Nightly Discovery Engine scan: processes the watchlist (top scorers from the
+# previous scan + tickers analyzed in the last 7 days), runs Graham + Market
+# engines on the filtered candidates, and writes the resulting situations to
+# Supabase. The frontend then reads them via /.netlify/functions/discover.
+#
+# A weekly full-universe sweep (.github/workflows/scan-full.yml) rotates the
+# watchlist composition by re-evaluating the entire SCAN_UNIVERSE.
 #
 # Why GitHub Actions instead of Netlify scheduled functions:
 #   - Netlify scheduled (background) functions require a Pro plan.
 #   - GitHub Actions is free for public repos and has generous quotas for
-#     private repos. A full scan takes ~10-20 min, well under the 6h limit.
+#     private repos. A nightly watchlist scan takes ~3-6 min.
 
 on:
   schedule:
-    # 03:00 UTC every day (= 06:00 Israel winter / 06:00 Israel summer adjusted).
+    # 03:00 UTC every day (= 06:00 Israel winter / 05:00 Israel summer).
     # Cron timezone is always UTC.
     - cron: '0 3 * * *'
   workflow_dispatch:
     # Allows manual "Run workflow" from the Actions tab.
+    inputs:
+      mode:
+        description: 'Scan mode'
+        required: false
+        default: 'nightly'
+        type: choice
+        options:
+          - nightly
+          - full
 
 concurrency:
-  # Never run two scans at once.
+  # Never run two scans at once -- nightly and full share the same group.
   group: discovery-scan
   cancel-in-progress: false
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
@@ -34,6 +47,9 @@ jobs:
       # Stored content is produced in English. Hebrew UI users see HE labels
       # around English thesis/insight text.
       SCAN_LANG: en
+      # Default to nightly (watchlist) when triggered by cron; honour the
+      # workflow_dispatch input when triggered manually.
+      SCAN_MODE: ${{ inputs.mode || 'nightly' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

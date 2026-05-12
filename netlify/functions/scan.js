@@ -51,7 +51,16 @@ exports.handler = async (event) => {
   }
 
   try {
+    // Mode selection:
+    //   ?mode=full     -> scan the full SCAN_UNIVERSE (~683 tickers, 10-20 min)
+    //   ?mode=nightly  -> scan watchlist only (~150 tickers, 3-6 min)
+    // Default is nightly so accidental cron triggers stay cheap. The weekly
+    // full sweep is invoked explicitly by the discovery-scan-full workflow.
+    const requestedMode = event.queryStringParameters?.mode === 'full'
+      ? 'full'
+      : 'nightly';
     const result = await runScan({
+      mode: requestedMode,
       log: (msg) => console.log(msg),
     });
     const status = result.ok ? 200 : 500;

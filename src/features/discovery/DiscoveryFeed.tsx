@@ -346,20 +346,35 @@ function SituationRowItem({ situation: s, rank, onTap }: SituationRowItemProps) 
             ) : null}
           </div>
 
-          {/* Inline analytical thesis (Graham's actual one-liner with numbers) */}
-          {s.insight ? (
-            <p
-              className="mt-2 text-[13px] text-gray-700 leading-snug"
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {s.insight}
-            </p>
-          ) : null}
+          {/* Inline analytical thesis: prefer Graham's actual per-ticker
+              thesis (or counter-thesis for non-BUY) over the stale templated
+              `insight` field. Many cached rows pre-date the Phase A insight
+              rewrite -- pulling thesis straight from full_analysis means the
+              user sees real per-ticker analytical text immediately, without
+              waiting for a rescan. */}
+          {(() => {
+            const thesisText =
+              s.graham_decision === 'BUY'
+                ? grahamFinal?.thesis
+                : grahamFinal?.counter?.summary || grahamFinal?.thesis
+            const text = (thesisText && thesisText.trim().length > 10)
+              ? thesisText
+              : s.insight
+            if (!text) return null
+            return (
+              <p
+                className="mt-2 text-[13px] text-gray-700 leading-snug"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {text}
+              </p>
+            )
+          })()}
         </div>
       </div>
     </button>

@@ -13,6 +13,11 @@
 // Optional:
 //   ANTHROPIC_MODEL    (default: claude-haiku-4-5)
 //   SCAN_LANG          (he | en, default: he)
+//   SCAN_MODE          (nightly | full, default: nightly)
+//                      - nightly: scan the watchlist (top-N by score + recent
+//                        searches). Fast and cheap; runs every day.
+//                      - full: scan the entire SCAN_UNIVERSE. Slower; runs
+//                        weekly to rotate the watchlist composition.
 //
 // Local dev (bypasses corporate TLS proxies via win-ca):
 //   $env:NODE_EXTRA_CA_CERTS = ".\node_modules\win-ca\pem\roots.pem"
@@ -29,7 +34,10 @@ const { runScan } = require(
 
 (async () => {
   const start = Date.now();
+  const mode = process.env.SCAN_MODE === 'full' ? 'full' : 'nightly';
+  console.log(`[scan] requested mode=${mode}`);
   const result = await runScan({
+    mode,
     log: (msg) => console.log(msg),
     lang: process.env.SCAN_LANG === 'en' ? 'en' : 'he',
   });

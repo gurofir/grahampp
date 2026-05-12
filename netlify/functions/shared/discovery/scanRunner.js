@@ -64,6 +64,73 @@ function num(v) {
   return null;
 }
 
+// --- Watchlist composition --------------------------------------------------
+// Nightly scans process only the "watchlist" -- a focused subset of the full
+// universe consisting of:
+//   1. The top N tickers by interestingScore from the most recent scan
+//      (high-quality opportunities we want to keep monitoring).
+//   2. Any ticker analyzed within the last RECENT_DAYS window (so manually
+//      searched tickers stay fresh and do not silently drop off).
+// A weekly full scan rotates the composition by re-evaluating the entire
+// universe, so new opportunities can break into the watchlist.
+//
+// Cost / speed math (vs full universe of ~683 tickers):
+//   - Full scan:    ~10-20 min, ~30 reanalyzed at AI = ~$0.30
+//   - Watchlist:    ~3-6 min,  ~25 reanalyzed at AI = ~$0.25
+// The win is mainly speed and bounded blast radius on volatile days.
+const WATCHLIST_TOP_N = 150;
+const WATCHLIST_RECENT_DAYS = 7;
+const WATCHLIST_MIN_VIABLE = 30; // bootstrap fallback threshold
+
+async function pickWatchlistTickers(supabase, log) {
+  const set = new Set();
+
+  // 1. Top scorers from the latest scan (excludes AVOIDs to avoid wasting
+  // compute on tickers we have already concluded are uninvestable).
+  try {
+    const { data: top, error: topErr } = await supabase
+      .from('situations')
+      .select('ticker, score, graham_decision')
+      .neq('graham_decision', 'AVOID')
+      .order('score', { ascending: false, nullsFirst: false })
+      .limit(WATCHLIST_TOP_N);
+    if (topErr) throw topErr;
+    for (const row of top || []) {
+      if (row?.ticker) set.add(row.ticker);
+    }
+    log(`[watchlist] top_by_score=${top?.length || 0}`);
+  } catch (err) {
+    log(`[watchlist] top-by-score query failed: ${String(err?.message || err)}`);
+  }
+
+  // 2. Recently analyzed tickers (manual searches + recent re-analyses).
+  // Keeps the user's recently-viewed names refreshed even if they slipped
+  // out of the top-N list.
+  try {
+    const sinceIso = new Date(
+      Date.now() - WATCHLIST_RECENT_DAYS * 86400_000,
+    ).toISOString();
+    const { data: recent, error: recentErr } = await supabase
+      .from('situations')
+      .select('ticker, scanned_at')
+      .gte('scanned_at', sinceIso)
+      .limit(300);
+    if (recentErr) throw recentErr;
+    let added = 0;
+    for (const row of recent || []) {
+      if (row?.ticker && !set.has(row.ticker)) {
+        set.add(row.ticker);
+        added += 1;
+      }
+    }
+    log(`[watchlist] recent_added=${added}`);
+  } catch (err) {
+    log(`[watchlist] recent query failed: ${String(err?.message || err)}`);
+  }
+
+  return [...set];
+}
+
 async function quickFetch(ticker) {
   try {
     const [quote, summary] = await Promise.all([
@@ -148,6 +215,16 @@ function reanalyzeReason(item, existing) {
     if (daysAgo >= 0 && daysAgo <= EARNINGS_LOOKBACK_DAYS) return 'earnings';
   }
 
+  // Schema drift: rows cached BEFORE we shipped the storyteller / Phase A
+  // insight rewrite are missing critical UI fields (plainSummary used by the
+  // "In plain words" panel; primaryFinding chip; per-ticker thesis-based
+  // insight). The price/stale heuristics never trip for stable top scorers,
+  // so without this trigger they keep their pre-storyteller cache for up to
+  // STALE_DAYS. Force one re-analysis so each ticker gets the modern shape;
+  // afterwards this trigger never fires again for that ticker.
+  const graham = existing.full_analysis?.dualEngine?.graham;
+  if (!graham?.plainSummary) return 'schema';
+
   return null;
 }
 
@@ -207,9 +284,11 @@ async function runScan(opts = {}) {
   const lang = opts.lang === 'he' ? 'he' : 'en';
   const supabaseUrl = opts.supabaseUrl || process.env.SUPABASE_URL;
   const supabaseKey = opts.supabaseKey || process.env.SUPABASE_SERVICE_KEY;
-  const universe = Array.isArray(opts.universe) && opts.universe.length
-    ? opts.universe
-    : SCAN_UNIVERSE;
+  // Scan mode -- 'nightly' processes the watchlist (top scorers + recent
+  // searches), 'full' processes the entire universe. The cron defaults to
+  // nightly; the weekly job and manual triggers can request 'full'. An
+  // explicit `opts.universe` array always wins (e.g. for ad-hoc CLI runs).
+  const requestedMode = opts.mode === 'full' ? 'full' : 'nightly';
 
   if (!apiKey) {
     return { ok: false, error: 'missing_anthropic_key' };
@@ -221,6 +300,31 @@ async function runScan(opts = {}) {
   const supabase = createClient(supabaseUrl, supabaseKey);
   const startTime = Date.now();
 
+  // --- Resolve scan universe based on mode -----------------------------------
+  let universe;
+  let mode = requestedMode;
+  if (Array.isArray(opts.universe) && opts.universe.length) {
+    universe = opts.universe;
+    mode = 'custom';
+  } else if (requestedMode === 'full') {
+    universe = SCAN_UNIVERSE;
+  } else {
+    const watchlist = await pickWatchlistTickers(supabase, log);
+    if (watchlist.length >= WATCHLIST_MIN_VIABLE) {
+      universe = watchlist;
+      log(`[scan] mode=nightly watchlist_size=${watchlist.length}`);
+    } else {
+      // Bootstrap: empty Supabase or a wipe -- promote to full so the next
+      // nightly has a healthy watchlist to work from.
+      log(
+        `[scan] watchlist=${watchlist.length} < ${WATCHLIST_MIN_VIABLE}, ` +
+          `bootstrapping with full universe`,
+      );
+      universe = SCAN_UNIVERSE;
+      mode = 'full';
+    }
+  }
+
   // --- Create scan run row ----------------------------------------------------
   let runId = null;
   try {
@@ -231,7 +335,7 @@ async function runScan(opts = {}) {
       .single();
     if (runErr) throw runErr;
     runId = runRow.id;
-    log(`[scan] run_id=${runId} universe=${universe.length}`);
+    log(`[scan] run_id=${runId} mode=${mode} universe=${universe.length}`);
   } catch (err) {
     return { ok: false, error: 'scan_run_insert_failed', detail: String(err?.message || err) };
   }
@@ -335,7 +439,7 @@ async function runScan(opts = {}) {
   // because it could not become a Graham BUY.
   const toReanalyze = [];
   const toRefresh = [];
-  const reasonCounts = { new: 0, stale: 0, price: 0, earnings: 0 };
+  const reasonCounts = { new: 0, stale: 0, price: 0, earnings: 0, schema: 0 };
   for (const item of screened) {
     const existing = existingByTicker.get(item.ticker);
     const reason = reanalyzeReason(item, existing);
@@ -350,7 +454,8 @@ async function runScan(opts = {}) {
     `[scan] incremental: reanalyze=${toReanalyze.length} ` +
       `refresh=${toRefresh.length} ` +
       `(new=${reasonCounts.new} stale=${reasonCounts.stale} ` +
-      `price=${reasonCounts.price} earnings=${reasonCounts.earnings})`,
+      `price=${reasonCounts.price} earnings=${reasonCounts.earnings} ` +
+      `schema=${reasonCounts.schema})`,
   );
 
   // --- Step 4: Deep AI -------------------------------------------------------
@@ -438,6 +543,7 @@ async function runScan(opts = {}) {
   return {
     ok: true,
     runId,
+    mode,
     universeSize: universe.length,
     candidates: candidates.length,
     withIndicators: withIndicators.length,
