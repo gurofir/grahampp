@@ -223,7 +223,14 @@ export function classifyArchetype(row: SituationRow): Archetype {
     return 'temporary_damage'
   }
 
-  return 'unclassified'
+  // 10. Decision-aware fallback. The original `unclassified` bucket got
+  // rendered as the unhelpful "SITUATION" placeholder; instead pick a
+  // label that at least communicates the engine's stance. Each variant
+  // carries its own title template and action line so the card still
+  // reads as intentional even when no specific pattern matched.
+  if (grahamD === 'BUY')   return 'unclassified_buy'
+  if (grahamD === 'AVOID') return 'unclassified_avoid'
+  return 'unclassified_wait'
 }
 
 // ---------- Analysis -> SituationRow shim ----------
@@ -424,7 +431,13 @@ export const ARCHETYPE_ACCENT: Record<Archetype, ArchetypeAccent> = {
   anti_hype_value:       { bg: '#E1EEF0', fg: '#225B6B' }, // sea foam
   expectation_mismatch:  { bg: '#EDE6F0', fg: '#5A3F70' }, // muted lavender
   overpriced_perfection: { bg: '#F0DCC9', fg: '#7A3D0F' }, // burnt sand
-  unclassified:          { bg: '#EEEEEC', fg: '#5F5E5A' }, // neutral
+  // Decision-aware fallbacks: green-leaning for BUY, neutral cream for
+  // WAIT, muted clay for AVOID. Tones echo the BUY/WAIT/AVOID palette
+  // used elsewhere without being as loud.
+  unclassified_buy:      { bg: '#E5EFE0', fg: '#3A6526' }, // muted sage
+  unclassified_wait:     { bg: '#F2EBD9', fg: '#6F5A1F' }, // calm cream
+  unclassified_avoid:    { bg: '#EFD8D8', fg: '#7E2727' }, // muted clay
+  unclassified:          { bg: '#EEEEEC', fg: '#5F5E5A' }, // legacy neutral
 }
 
 // Sentiment-driven accent for the FEAR/GREED bar's dot.

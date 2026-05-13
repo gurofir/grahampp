@@ -368,6 +368,9 @@
     "anti_hype_value": "ערך אנטי-היפ",
     "expectation_mismatch": "אי-התאמה לציפיות",
     "overpriced_perfection": "תמחור פרפקציוניסטי",
+    "unclassified_buy": "ערך עם הסתייגויות",
+    "unclassified_wait": "שווה מעקב",
+    "unclassified_avoid": "סיכון דומיננטי",
     "unclassified": "סיטואציה",
     "title": {
       "cyclical_panic": "נזק זמני, או הידרדרות מתמשכת?",
@@ -379,6 +382,9 @@
       "anti_hype_value": "זול כי משעמם, או משעמם כי שבור?",
       "expectation_mismatch": "תומחר לעתיד שאולי לא יתממש",
       "overpriced_perfection": "תומחר לפרפקציה — מה אם לא?",
+      "unclassified_buy": "שווה להסתכל לעומק — אבל בתנאים",
+      "unclassified_wait": "אותות מעורבים — התמונה עדיין לא ברורה",
+      "unclassified_avoid": "הסיכון שולט בתמונה כרגע",
       "unclassified": "מה השוק מתמחר כאן באופן שגוי?"
     },
     "actionLine": {
@@ -391,6 +397,9 @@
       "anti_hype_value": "מחכה לרוטציית הון חזרה למצמיחים איכותיים",
       "expectation_mismatch": "מעקב אחר תחזיות EPS לשני רבעונים",
       "overpriced_perfection": "מעקב אחר מגמת מרווחים והאטה בצמיחה",
+      "unclassified_buy": "בדוק שוב את ההסתייגויות בדוח הבא",
+      "unclassified_wait": "המתן לנתון הבא לפני פעולה",
+      "unclassified_avoid": "המתן לשיפור מוחשי לפני חזרה",
       "unclassified": "בדוק שוב בדוח הבא"
     }
   },

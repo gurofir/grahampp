@@ -84,11 +84,15 @@ export default function AnalysisResult({
     [analysis],
   )
 
+  // Prefer the storyteller's per-ticker headline whenever the archetype
+  // is any of the generic fallback variants -- it's more specific than
+  // the templated title. Specific archetypes always use their template.
   const titleFallback = situationTitleFallback(
     analysisToSituationRow(analysis),
   )
+  const isFallbackArchetype = archetype.startsWith('unclassified')
   const situationTitle =
-    archetype === 'unclassified' && titleFallback
+    isFallbackArchetype && titleFallback
       ? titleFallback
       : t(situationTitleKey(archetype))
 

@@ -368,6 +368,9 @@
     "anti_hype_value": "ANTI-HYPE VALUE",
     "expectation_mismatch": "EXPECTATION MISMATCH",
     "overpriced_perfection": "OVERPRICED PERFECTION",
+    "unclassified_buy": "VALUE WITH CAVEATS",
+    "unclassified_wait": "WORTH WATCHING",
+    "unclassified_avoid": "RISK DOMINANT",
     "unclassified": "SITUATION",
     "title": {
       "cyclical_panic": "Temporary damage, or permanent deterioration?",
@@ -379,6 +382,9 @@
       "anti_hype_value": "Cheap because boring, or boring because broken?",
       "expectation_mismatch": "Priced for a future that may not arrive",
       "overpriced_perfection": "Priced for perfection — what if it's not?",
+      "unclassified_buy": "Worth a closer look — but with conditions",
+      "unclassified_wait": "Mixed signals — the case isn't clear yet",
+      "unclassified_avoid": "Risk dominates the picture right now",
       "unclassified": "What is the market currently mispricing here?"
     },
     "actionLine": {
@@ -391,6 +397,9 @@
       "anti_hype_value": "Watch for capital rotation back into quality compounders",
       "expectation_mismatch": "Watch consensus EPS revisions for next two quarters",
       "overpriced_perfection": "Watch margin trajectory and any growth deceleration",
+      "unclassified_buy": "Re-evaluate the caveats at next earnings",
+      "unclassified_wait": "Watch for the next data point before acting",
+      "unclassified_avoid": "Wait for tangible improvement before re-engaging",
       "unclassified": "Re-evaluate at next earnings"
     }
   },

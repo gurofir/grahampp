@@ -53,8 +53,12 @@ export default function SituationCard({
   // insight string.
   const titleFromArchetype = t(situationTitleKey(archetype))
   const titleFallback = situationTitleFallback(situation)
+  // For any of the generic fallback archetypes (unclassified_buy/wait/avoid
+  // and the legacy unclassified) we prefer the storyteller's per-ticker
+  // headline -- it's more specific than the templated title.
+  const isFallbackArchetype = archetype.startsWith('unclassified')
   const title =
-    archetype === 'unclassified' && titleFallback
+    isFallbackArchetype && titleFallback
       ? titleFallback
       : titleFromArchetype
 

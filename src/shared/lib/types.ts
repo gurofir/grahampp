@@ -238,7 +238,13 @@ export type Archetype =
   | 'anti_hype_value'       // hot sector (Tech/Comm) + Graham BUY + market WAIT
   | 'expectation_mismatch'  // forward PE > trailing PE + Graham WAIT
   | 'overpriced_perfection' // market BUY + Graham AVOID/WAIT + price near 52w high
-  | 'unclassified'          // no clean fit — falls back to generic templates
+  // Decision-aware fallbacks: when no specific archetype rule fires, we
+  // still surface a meaningful label keyed off the Graham decision so the
+  // user never sees a generic "SITUATION" placeholder.
+  | 'unclassified_buy'      // generic Graham BUY without a sharper pattern
+  | 'unclassified_wait'     // generic Graham WAIT without a sharper pattern
+  | 'unclassified_avoid'    // generic Graham AVOID without a sharper pattern
+  | 'unclassified'          // legacy fallback (kept for old WatchedItem snapshots)
 
 // Sentiment spectrum from FEAR to GREED. Used by the small spectrum bar on
 // every situation card (mockup: FEAR ←—●—→ GREED).
