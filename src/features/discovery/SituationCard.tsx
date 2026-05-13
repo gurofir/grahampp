@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SituationRow } from './hooks/useDiscovery'
 import {
@@ -7,6 +8,11 @@ import {
   situationTitleKey,
   situationTitleFallback,
 } from '../../shared/lib/archetype'
+import {
+  STANDOUT_PALETTE,
+  topStandoutIndicators,
+  type StandoutIndicator,
+} from '../../shared/lib/standouts'
 import { currencySymbol } from '../../shared/lib/format'
 import ArchetypeBadge from '../../shared/ui/ArchetypeBadge'
 import SentimentSpectrum from '../../shared/ui/SentimentSpectrum'
@@ -19,23 +25,26 @@ export interface SituationCardProps {
   onToggleWatch: () => void
 }
 
-// One row in the Discovery list. Constitutional layout:
+// One row in the Discovery list. Constitutional layout, top to bottom:
 //
 //   [ARCHETYPE PILL]                                 [+ watch]
 //   TICKER · COMPANY                       $price  +-X.XX%
+//   sector
 //
 //   Question-form situation title (1-2 lines)
 //
-//   FEAR ←—●—→ GREED
-//   sentiment label
+//   Standout chips: [P/E 13×]  [Coverage 21×]  [ROIC 18%]
+//   (top 2-3 most extreme indicators, color-coded by direction)
 //
-//   The disagreement: market believes X / Graham++ sees Y  (1-2 lines)
+//   FEAR ←—●—→ GREED   sentiment label
+//
+//   Plain-language story (Storyteller LLM, 2-3 sentences)
 //
 //   [compound conviction phrase]
 //
-// All raw metrics (PE, FCF, fragility band etc.) are deliberately hidden
-// here -- they live behind accordions on the stock-detail page. The card
-// is for narrative recognition, not analysis.
+// The chips and the story together explain WHY this stock is in the list
+// without forcing the user to tap through. The chips give concrete
+// numbers; the story gives the human translation.
 export default function SituationCard({
   situation,
   isWatched,
@@ -48,23 +57,34 @@ export default function SituationCard({
   const conviction = compoundConvictionLabel(situation)
   const sym = currencySymbol(situation.full_analysis?.currency || 'USD')
 
-  // Title: prefer the per-archetype question template; fall back to the
-  // Storyteller's plain-language headline; final fallback is the templated
-  // insight string.
+  // Title: prefer per-archetype template; for the generic fallback variants
+  // we prefer the storyteller's per-ticker headline (more specific).
   const titleFromArchetype = t(situationTitleKey(archetype))
   const titleFallback = situationTitleFallback(situation)
-  // For any of the generic fallback archetypes (unclassified_buy/wait/avoid
-  // and the legacy unclassified) we prefer the storyteller's per-ticker
-  // headline -- it's more specific than the templated title.
   const isFallbackArchetype = archetype.startsWith('unclassified')
   const title =
     isFallbackArchetype && titleFallback
       ? titleFallback
       : titleFromArchetype
 
-  // Disagreement line: brief market vs Graham summary. We compose this
-  // client-side from the existing graham_thesis / market_thesis fields.
-  const disagreement = composeDisagreement(situation, t)
+  const grahamFinal = situation.full_analysis?.dualEngine?.graham
+  const plainStory = grahamFinal?.plainSummary?.story?.trim() || null
+
+  // Standout chips -- top 2-3 most extreme indicators biased by decision.
+  const standouts = useMemo<StandoutIndicator[]>(
+    () =>
+      topStandoutIndicators(
+        situation.full_analysis,
+        situation.graham_decision,
+        3,
+      ),
+    [situation.full_analysis, situation.graham_decision],
+  )
+
+  // When no plain story exists (older cached rows pre-Storyteller), fall
+  // back to a Graham-vs-Market disagreement summary so the card never has
+  // a blank explanation slot.
+  const fallbackBlurb = plainStory ? null : composeDisagreement(situation, t)
 
   const cardStyle: React.CSSProperties = {
     backgroundColor: '#FFFFFF',
@@ -144,11 +164,33 @@ export default function SituationCard({
           {title}
         </h3>
 
+        {standouts.length > 0 ? (
+          <StandoutChips standouts={standouts} />
+        ) : null}
+
         <div className="mt-3">
           <SentimentSpectrum sentiment={sentiment} />
         </div>
 
-        {disagreement ? (
+        {plainStory ? (
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-wider text-[#9A9A95] font-semibold mb-1">
+              {t('plain.header')}
+            </div>
+            <p
+              className="text-[13px] text-[#3F3F3D] leading-snug"
+              dir="auto"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {plainStory}
+            </p>
+          </div>
+        ) : fallbackBlurb ? (
           <p
             className="mt-3 text-[13px] text-[#3F3F3D] leading-snug"
             dir="auto"
@@ -159,7 +201,7 @@ export default function SituationCard({
               overflow: 'hidden',
             }}
           >
-            {disagreement}
+            {fallbackBlurb}
           </p>
         ) : null}
 
@@ -181,9 +223,54 @@ export default function SituationCard({
   )
 }
 
-// Build the inline "Market believes X · Graham++ sees Y" line. Skips the
-// dual structure when one side is missing and falls back to a single
-// thesis sentence.
+// Horizontal row of small color-coded chips, each showing one standout
+// indicator (e.g. "P/E 13×" with a green tint when it's deep value).
+// Wraps onto a second line when there's no horizontal room.
+function StandoutChips({ standouts }: { standouts: StandoutIndicator[] }) {
+  const { t } = useTranslation()
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5" dir="ltr">
+      {standouts.map((s) => {
+        const palette =
+          s.direction === 'positive' || s.direction === 'negative'
+            ? STANDOUT_PALETTE[s.direction]
+            : STANDOUT_PALETTE.neutral
+        const label = t(`indicators.${s.key}`, { defaultValue: s.key })
+        return (
+          <span
+            key={s.key}
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium"
+            style={{
+              backgroundColor: palette.bg,
+              color: palette.fg,
+              padding: '3px 9px',
+              borderRadius: 999,
+              border: `0.5px solid ${palette.bg}`,
+              lineHeight: 1.3,
+            }}
+            title={`${label}: ${s.formatted}`}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                backgroundColor: palette.ring,
+              }}
+            />
+            <span>{label}</span>
+            <span className="tabular-nums font-semibold">{s.formatted}</span>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+// Build the inline "Market believes X · Graham++ sees Y" line. Used only
+// as a fallback when the storyteller didn't produce a plain-language
+// summary for this ticker (older cached rows).
 function composeDisagreement(
   s: SituationRow,
   t: (k: string, opts?: Record<string, unknown>) => string,
