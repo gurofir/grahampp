@@ -1,0 +1,72 @@
+name: deploy-netlify
+
+# Auto-deploy to Netlify on every push to main.
+#
+# Why this exists: deploying from the corporate dev network via Netlify CLI
+# is unreliable -- the CDN blob upload step frequently stalls behind the
+# corporate proxy. GitHub Actions runs on GitHub's own network and uploads
+# in seconds, every time. Pushing to main is the trigger; no manual deploy
+# step needed from a developer machine.
+#
+# Required GitHub repo secrets (Settings -> Secrets and variables -> Actions):
+#   NETLIFY_AUTH_TOKEN  - personal access token from
+#                         https://app.netlify.com/user/applications#personal-access-tokens
+#   NETLIFY_SITE_ID     - the site's API ID, found at
+#                         https://app.netlify.com/sites/<site>/configuration/general
+#                         (currently 74c770d1-1bb8-4d8f-ab22-7b1ba0cc9c0d)
+#
+# Manual run: Actions tab -> deploy-netlify -> "Run workflow".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only redeploy when something deployable changed; doc-only commits skip.
+      - 'src/**'
+      - 'netlify/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.*'
+      - 'netlify.toml'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  # Cancel any in-flight deploy when a newer commit lands -- only the latest
+  # wins, no point publishing intermediate states.
+  group: deploy-netlify
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Deploy to Netlify (production)
+        run: |
+          npx --yes netlify-cli@latest deploy \
+            --prod \
+            --dir=dist \
+            --functions=netlify/functions \
+            --skip-functions-cache \
+            --message "GitHub Actions: ${{ github.event.head_commit.message }}"

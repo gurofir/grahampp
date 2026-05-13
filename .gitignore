@@ -31,3 +31,8 @@ _envset.json
 *.njsproj
 *.sln
 *.sw?
+
+# Local debug/scratch dumps from /discover and other endpoints --
+# captured manually with curl, not part of the source.
+discover_response.json
+*_response.json
