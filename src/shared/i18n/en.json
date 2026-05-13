@@ -163,7 +163,9 @@
   },
   "accordion": {
     "reasons": "Full reasoning",
-    "data": "Financial indicators"
+    "data": "Financial indicators",
+    "fragility": "Fragility evidence",
+    "indicators": "Financial indicators"
   },
   "reality": {
     "fragility": {
@@ -319,6 +321,7 @@
   },
   "discovery": {
     "headerTitle": "Graham scanned the market",
+    "scanIntro": "Graham scanned the market · {{ago}}",
     "foundOne": "1 interesting situation today",
     "foundMany": "{{count}} interesting situations today",
     "scannedSummary": "from {{universe}} stocks scanned",
@@ -326,6 +329,12 @@
     "universeContext": "from {{universe}} screened",
     "countBuys": "BUYs",
     "countWatching": "watching",
+    "statsExamining": "{{count}} worth examining",
+    "statsWatchingActive": "{{count}} watching",
+    "statsScreened": "from {{count}} screened",
+    "searchPlaceholder": "Search ticker or situation...",
+    "showMoreSituations": "Show {{count}} more situations",
+    "allFilter": "All",
     "lastScanJustNow": "just now",
     "lastScanMinutes": "{{minutes}}m ago",
     "lastScanHours": "{{hours}}h ago",
@@ -348,6 +357,119 @@
       "medium": "Medium conviction",
       "low": "Low conviction"
     }
+  },
+  "archetype": {
+    "cyclical_panic": "CYCLICAL PANIC",
+    "narrative_collapse": "NARRATIVE COLLAPSE",
+    "silent_compounder": "SILENT COMPOUNDER",
+    "temporary_damage": "TEMPORARY DAMAGE",
+    "consensus_fear": "CONSENSUS FEAR",
+    "forgotten_quality": "FORGOTTEN QUALITY",
+    "anti_hype_value": "ANTI-HYPE VALUE",
+    "expectation_mismatch": "EXPECTATION MISMATCH",
+    "overpriced_perfection": "OVERPRICED PERFECTION",
+    "unclassified": "SITUATION",
+    "title": {
+      "cyclical_panic": "Temporary damage, or permanent deterioration?",
+      "narrative_collapse": "Fear priced faster than fundamentals deteriorate",
+      "silent_compounder": "A silent compounder the market has forgotten",
+      "temporary_damage": "Temporary damage, or warning sign?",
+      "consensus_fear": "Consensus fear — is the market right this time?",
+      "forgotten_quality": "Ignored quality during the AI narrative mania",
+      "anti_hype_value": "Cheap because boring, or boring because broken?",
+      "expectation_mismatch": "Priced for a future that may not arrive",
+      "overpriced_perfection": "Priced for perfection — what if it's not?",
+      "unclassified": "What is the market currently mispricing here?"
+    },
+    "actionLine": {
+      "cyclical_panic": "Watch for cycle-trough confirmation in the next earnings cycle",
+      "narrative_collapse": "Watching for narrative shift or institutional re-engagement",
+      "silent_compounder": "Patient thesis · no trigger required · re-evaluate at next earnings",
+      "temporary_damage": "Next signal: management acknowledgement of cyclical cause",
+      "consensus_fear": "Wait for visible deterioration to slow before acting",
+      "forgotten_quality": "Watching for institutional re-engagement or narrative shift toward quality",
+      "anti_hype_value": "Watch for capital rotation back into quality compounders",
+      "expectation_mismatch": "Watch consensus EPS revisions for next two quarters",
+      "overpriced_perfection": "Watch margin trajectory and any growth deceleration",
+      "unclassified": "Re-evaluate at next earnings"
+    }
+  },
+  "sentiment": {
+    "fear": "fear outpacing fundamentals",
+    "mild_fear": "cautious sentiment",
+    "neutral": "balanced view",
+    "mild_greed": "optimistic sentiment",
+    "greed": "consensus enthusiasm"
+  },
+  "spectrum": {
+    "fear": "FEAR",
+    "greed": "GREED"
+  },
+  "conviction": {
+    "strongValueWeakCatalyst": "Strong valuation · uncertain catalyst",
+    "cheapButFragile": "Cheap but operationally fragile",
+    "excellentNoCatalyst": "Excellent business · no catalyst needed",
+    "qualityExpectationsRich": "High quality, expectations too optimistic",
+    "earlyEntryRisk": "Strong fundamentals · near-term timing risk",
+    "highFragilityDiscipline": "High fragility · thesis discipline required",
+    "patientCompounder": "Patient compounder · no trigger required",
+    "underPressureReassess": "Under pressure · reassess before next data point",
+    "deepValueWatchful": "Deep value · watchful patience",
+    "cyclicalPatience": "Cyclical patience · wait for trough confirmation",
+    "narrativeRisk": "Narrative risk · reassess on momentum shift",
+    "balancedSetup": "Balanced setup · monitor for catalysts",
+    "default": "Mixed signals · further work needed"
+  },
+  "disagreement": {
+    "header": "The disagreement",
+    "marketBelieves": "Market believes",
+    "grahamSees": "Graham++ sees"
+  },
+  "thesisFlow": {
+    "thesis": "The thesis",
+    "counter": "Why the market may still be right",
+    "counterShort": "Counter-thesis",
+    "breaks": "What breaks this thesis",
+    "breaksShort": "Invalidation conditions",
+    "confirms": "What confirms this thesis",
+    "confirmsShort": "Confirmation signals"
+  },
+  "watch": {
+    "add": "+ watch",
+    "watching": "watching"
+  },
+  "watching": {
+    "title": "Watching",
+    "subtitleOne": "1 situation · monitoring for thesis confirmation",
+    "subtitle": "{{count}} situations · monitoring for thesis confirmation",
+    "searchPlaceholder": "Search your watching list...",
+    "empty": {
+      "title": "Nothing in your watchlist yet",
+      "subtitle": "Tap + watch on a situation to start monitoring its thesis"
+    },
+    "section": {
+      "thesis_under_pressure": "THESIS UNDER PRESSURE",
+      "awaiting_confirmation": "AWAITING CONFIRMATION SIGNALS",
+      "thesis_confirming": "THESIS CONFIRMING"
+    },
+    "statusBadge": {
+      "thesis_under_pressure": "under pressure",
+      "awaiting_confirmation": "watching",
+      "thesis_confirming": "confirming"
+    },
+    "sinceAnalysis": "since analysis",
+    "addedRecent": "added today",
+    "addedDate": "added {{date}}",
+    "noLongerInScan": "Outside latest scan — using saved snapshot"
+  },
+  "tabs": {
+    "situations": "situations",
+    "watching": "watching"
+  },
+  "stockDetail": {
+    "back": "situations",
+    "currentlyWatching": "Currently watching this situation",
+    "share": "Share"
   },
   "situationTypes": {
     "value_opportunity": "Value Opportunity",

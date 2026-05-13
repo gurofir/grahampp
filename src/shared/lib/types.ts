@@ -218,3 +218,71 @@ export interface Analysis {
   fromCache?: boolean
   cachedAt?: string | null
 }
+
+// =====================================================================
+// Constitutional UX (Product Constitution v2) — derived/UI-only types.
+// These are computed on the frontend from cached Analysis data; nothing
+// in this section requires a scan or a backend change.
+// =====================================================================
+
+// Recurring market-psychology archetypes. Every situation surfaced in the
+// Discovery feed is classified into one of these so users learn to recognize
+// patterns of market behaviour rather than memorising tickers (Constitution §7).
+export type Archetype =
+  | 'cyclical_panic'        // sector cyclical + price near 52w low + market AVOID/WAIT + Graham BUY
+  | 'narrative_collapse'    // price near 52w low + market AVOID + fragility ≤ moderate
+  | 'silent_compounder'     // high ROIC + dividend streak + Graham BUY + not hot sector
+  | 'temporary_damage'      // recent earnings miss + Graham BUY + moderate fragility
+  | 'consensus_fear'        // both engines AVOID OR fragility unstable
+  | 'forgotten_quality'     // high ROIC + price not at 52w high + Graham BUY + cheap PE
+  | 'anti_hype_value'       // hot sector (Tech/Comm) + Graham BUY + market WAIT
+  | 'expectation_mismatch'  // forward PE > trailing PE + Graham WAIT
+  | 'overpriced_perfection' // market BUY + Graham AVOID/WAIT + price near 52w high
+  | 'unclassified'          // no clean fit — falls back to generic templates
+
+// Sentiment spectrum from FEAR to GREED. Used by the small spectrum bar on
+// every situation card (mockup: FEAR ←—●—→ GREED).
+export type SentimentLabel =
+  | 'fear'
+  | 'mild_fear'
+  | 'neutral'
+  | 'mild_greed'
+  | 'greed'
+
+export interface Sentiment {
+  // 0 = max fear, 100 = max greed. The dot on the spectrum bar is positioned
+  // at this percentage from left.
+  score: number
+  label: SentimentLabel
+}
+
+// Status of a watched thesis on the Watching dashboard. The watching page
+// groups cards into the three sections in this order (Constitution §14).
+export type WatchStatus =
+  | 'thesis_under_pressure'   // counter conditions activating / killSwitch nearing / price dropping
+  | 'awaiting_confirmation'   // holding pattern, default state right after adding
+  | 'thesis_confirming'       // tailwinds present + price moving in thesis direction
+
+// Snapshot captured at the moment the user adds a ticker to their watchlist.
+// We store enough context to (a) compute "since-add" deltas without re-fetching
+// the old analysis, and (b) detect when killSwitches that were defined at
+// add-time have begun firing — the heart of "thesis under pressure".
+export interface WatchedSnapshot {
+  archetype: Archetype
+  fragilityBand: FragilityBand | null
+  fragilityScore: number | null
+  killSwitches: string[]
+  decision: Decision
+  confidence: Confidence
+  situationTitle: string
+  companyName: string | null
+  sector: string | null
+  currency: string
+}
+
+export interface WatchedItem {
+  ticker: string
+  addedAt: string          // ISO timestamp of when the user tapped + watch
+  addedPrice: number       // currentPrice at add-time; powers "since analysis %"
+  snapshot: WatchedSnapshot
+}

@@ -163,7 +163,9 @@
   },
   "accordion": {
     "reasons": "הנימוקים המלאים",
-    "data": "מדדים פיננסיים"
+    "data": "מדדים פיננסיים",
+    "fragility": "ראיות שבריריות",
+    "indicators": "מדדים פיננסיים"
   },
   "reality": {
     "fragility": {
@@ -319,6 +321,7 @@
   },
   "discovery": {
     "headerTitle": "גרהם סרק את השוק",
+    "scanIntro": "גרהם סרק את השוק · {{ago}}",
     "foundOne": "סיטואציה אחת מעניינת היום",
     "foundMany": "{{count}} סיטואציות מעניינות היום",
     "scannedSummary": "מתוך {{universe}} מניות שנסרקו",
@@ -326,6 +329,12 @@
     "universeContext": "מתוך {{universe}} מניות",
     "countBuys": "קניות",
     "countWatching": "במעקב",
+    "statsExamining": "{{count}} שווים בחינה",
+    "statsWatchingActive": "{{count}} במעקב",
+    "statsScreened": "מתוך {{count}} שנסרקו",
+    "searchPlaceholder": "חפש טיקר או סיטואציה...",
+    "showMoreSituations": "הצג עוד {{count}} סיטואציות",
+    "allFilter": "הכל",
     "lastScanJustNow": "כרגע",
     "lastScanMinutes": "לפני {{minutes}} ד׳",
     "lastScanHours": "לפני {{hours}} ש׳",
@@ -348,6 +357,119 @@
       "medium": "ביטחון בינוני",
       "low": "ביטחון נמוך"
     }
+  },
+  "archetype": {
+    "cyclical_panic": "פאניקה מחזורית",
+    "narrative_collapse": "קריסת נרטיב",
+    "silent_compounder": "מצמיח שקט",
+    "temporary_damage": "נזק זמני",
+    "consensus_fear": "פחד קונצנזוס",
+    "forgotten_quality": "איכות נשכחת",
+    "anti_hype_value": "ערך אנטי-היפ",
+    "expectation_mismatch": "אי-התאמה לציפיות",
+    "overpriced_perfection": "תמחור פרפקציוניסטי",
+    "unclassified": "סיטואציה",
+    "title": {
+      "cyclical_panic": "נזק זמני, או הידרדרות מתמשכת?",
+      "narrative_collapse": "פחד תומחר מהר יותר משהיסודות הידרדרו",
+      "silent_compounder": "מצמיח שקט שהשוק שכח",
+      "temporary_damage": "נזק זמני, או סימן אזהרה?",
+      "consensus_fear": "פחד קונצנזוס — האם השוק צודק הפעם?",
+      "forgotten_quality": "איכות שנעלמה במהלך מאניית ה-AI",
+      "anti_hype_value": "זול כי משעמם, או משעמם כי שבור?",
+      "expectation_mismatch": "תומחר לעתיד שאולי לא יתממש",
+      "overpriced_perfection": "תומחר לפרפקציה — מה אם לא?",
+      "unclassified": "מה השוק מתמחר כאן באופן שגוי?"
+    },
+    "actionLine": {
+      "cyclical_panic": "מחכה לאישור תחתית מחזור בדוח הקרוב",
+      "narrative_collapse": "מחכה למעבר נרטיב או חזרה מוסדית",
+      "silent_compounder": "תזה סבלנית · אין צורך בטריגר · בדוק שוב בדוח הבא",
+      "temporary_damage": "אות הבא: הכרה של ההנהלה בגורם מחזורי",
+      "consensus_fear": "המתן עד שההידרדרות תאט לפני פעולה",
+      "forgotten_quality": "מחכה לחזרה מוסדית או למעבר נרטיב לאיכות",
+      "anti_hype_value": "מחכה לרוטציית הון חזרה למצמיחים איכותיים",
+      "expectation_mismatch": "מעקב אחר תחזיות EPS לשני רבעונים",
+      "overpriced_perfection": "מעקב אחר מגמת מרווחים והאטה בצמיחה",
+      "unclassified": "בדוק שוב בדוח הבא"
+    }
+  },
+  "sentiment": {
+    "fear": "פחד גובר על היסודות",
+    "mild_fear": "סנטימנט זהיר",
+    "neutral": "מבט מאוזן",
+    "mild_greed": "סנטימנט אופטימי",
+    "greed": "התלהבות קונצנזוס"
+  },
+  "spectrum": {
+    "fear": "פחד",
+    "greed": "אופטימיות"
+  },
+  "conviction": {
+    "strongValueWeakCatalyst": "תמחור חזק · טריגר לא ברור",
+    "cheapButFragile": "זול אך שברירי תפעולית",
+    "excellentNoCatalyst": "עסק מעולה · אין צורך בטריגר",
+    "qualityExpectationsRich": "איכות גבוהה, ציפיות אופטימיות מדי",
+    "earlyEntryRisk": "יסודות חזקים · סיכון תזמון בטווח קצר",
+    "highFragilityDiscipline": "שבריריות גבוהה · נדרשת משמעת",
+    "patientCompounder": "מצמיח סבלני · אין צורך בטריגר",
+    "underPressureReassess": "תחת לחץ · יש להעריך שוב לפני נתון הבא",
+    "deepValueWatchful": "ערך עמוק · המתנה ערנית",
+    "cyclicalPatience": "סבלנות מחזורית · המתן לאישור תחתית",
+    "narrativeRisk": "סיכון נרטיבי · בדוק שוב במעבר מומנטום",
+    "balancedSetup": "סטאפ מאוזן · עקוב אחר טריגרים",
+    "default": "אותות מעורבים · נדרש מחקר נוסף"
+  },
+  "disagreement": {
+    "header": "המחלוקת",
+    "marketBelieves": "השוק מאמין",
+    "grahamSees": "Graham++ רואה"
+  },
+  "thesisFlow": {
+    "thesis": "התזה",
+    "counter": "למה השוק עדיין עשוי לצדוק",
+    "counterShort": "טיעון נגדי",
+    "breaks": "מה ישבור את התזה",
+    "breaksShort": "תנאי פסילה",
+    "confirms": "מה יאשר את התזה",
+    "confirmsShort": "סימני אישור"
+  },
+  "watch": {
+    "add": "+ מעקב",
+    "watching": "במעקב"
+  },
+  "watching": {
+    "title": "מעקב",
+    "subtitleOne": "סיטואציה אחת · מעקב אחר אישור תזה",
+    "subtitle": "{{count}} סיטואציות · מעקב אחר אישור תזה",
+    "searchPlaceholder": "חפש ברשימת המעקב...",
+    "empty": {
+      "title": "אין כלום ברשימת המעקב עדיין",
+      "subtitle": "הקש + מעקב על סיטואציה כדי להתחיל לעקוב אחר התזה"
+    },
+    "section": {
+      "thesis_under_pressure": "תזה תחת לחץ",
+      "awaiting_confirmation": "ממתין לסימני אישור",
+      "thesis_confirming": "תזה מתאשרת"
+    },
+    "statusBadge": {
+      "thesis_under_pressure": "תחת לחץ",
+      "awaiting_confirmation": "במעקב",
+      "thesis_confirming": "מתאשרת"
+    },
+    "sinceAnalysis": "מאז הניתוח",
+    "addedRecent": "נוסף היום",
+    "addedDate": "נוסף {{date}}",
+    "noLongerInScan": "מחוץ לסריקה האחרונה — מציג מהתמונה השמורה"
+  },
+  "tabs": {
+    "situations": "סיטואציות",
+    "watching": "מעקב"
+  },
+  "stockDetail": {
+    "back": "סיטואציות",
+    "currentlyWatching": "סיטואציה זו במעקב",
+    "share": "שתף"
   },
   "situationTypes": {
     "value_opportunity": "הזדמנות ערך",

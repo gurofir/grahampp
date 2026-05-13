@@ -1,24 +1,23 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import LanguageToggle from './features/home/LanguageToggle'
-import SearchBar from './features/home/SearchBar'
 import LoadingScreen from './features/home/LoadingScreen'
 import AnalysisResult from './features/analysis/AnalysisResult'
-import ThesisList from './features/watchlist/ThesisList'
-import { useTheses, type Thesis } from './features/watchlist/hooks/useTheses'
 import { useDiscovery, type SituationRow } from './features/discovery/hooks/useDiscovery'
 import DiscoveryFeed from './features/discovery/DiscoveryFeed'
-import type { Analysis } from './shared/lib/types'
+import WatchingPage from './features/watching/WatchingPage'
+import AppShell from './AppShell'
+import type { Analysis, WatchedItem } from './shared/lib/types'
+import type { TabId } from './shared/ui/BottomTabBar'
+import { useWatchlist } from './shared/hooks/useWatchlist'
 
-type View = 'home' | 'loading' | 'result'
+type View = 'list' | 'loading' | 'result'
 export type AiStatus = 'idle' | 'loading' | 'done' | 'unavailable' | 'error'
 
 // A cached row is "renderable from cache" as long as the dual engine ran.
 // Optional AI layers (plainSummary, businessDescription) are best-effort and
-// gracefully degrade in the components — we never burn a fresh /interpret
+// gracefully degrade in the components -- we never burn a fresh /interpret
 // call on a Discovery click just because storyteller or about happened to
-// fail during the scan. Only fall back to /interpret when there is no engine
-// data at all (very old rows, or analyze.js indicators-only response).
+// fail during the scan.
 function hasEngineData(a: Analysis | null | undefined): boolean {
   if (!a) return false
   if (!a.dualEngine) return false
@@ -29,19 +28,13 @@ function hasEngineData(a: Analysis | null | undefined): boolean {
 export default function App() {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.language === 'he'
-  const {
-    theses,
-    saveThesis,
-    removeThesis,
-    updateThesisText,
-    updateLatestSnapshot,
-  } = useTheses()
+  const watch = useWatchlist()
 
-  const [view, setView] = useState<View>('home')
+  const [view, setView] = useState<View>('list')
+  const [tab, setTab] = useState<TabId>('situations')
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [aiStatus, setAiStatus] = useState<AiStatus>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [savedTicker, setSavedTicker] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
   const { data: discovery, loading: discoveryLoading } = useDiscovery()
@@ -80,7 +73,6 @@ export default function App() {
       setError(null)
       if (!fresh) {
         setAnalysis(null)
-        setSavedTicker(null)
       }
       setAiStatus('idle')
       if (!fresh) setView('loading')
@@ -91,17 +83,12 @@ export default function App() {
         if (!res.ok) {
           const key = data?.error || 'generic'
           setError(t(`errors.${key}`, t('errors.generic')))
-          setView('home')
+          setView('list')
           return
         }
         const next = data as Analysis
         setAnalysis(next)
         setView('result')
-        // Update the saved thesis snapshot (price + tiers) for tier-change alerts.
-        updateLatestSnapshot(next)
-        // Cache hit with engine data → render straight from cache, no AI call.
-        // Storyteller / About summaries are best-effort; missing values
-        // gracefully degrade in the components.
         if (next.fromCache && hasEngineData(next)) {
           setAiStatus('done')
           return
@@ -109,60 +96,43 @@ export default function App() {
         void fetchInterpretation(next.ticker, i18n.language)
       } catch {
         setError(t('errors.networkError'))
-        setView('home')
+        setView('list')
       }
     },
-    [i18n.language, t, fetchInterpretation, updateLatestSnapshot],
+    [i18n.language, t, fetchInterpretation],
   )
 
-  const handleSituationTap = useCallback(
-    (situation: SituationRow) => {
-      // Discovery is pre-computed — render from cache, no API calls. If
-      // optional AI layers (plainSummary, About) are missing on the cached
-      // row, the components degrade gracefully rather than burn an /interpret
-      // call on every tap.
-      setError(null)
-      setSavedTicker(null)
-      const fullAnalysis: Analysis = {
-        ...situation.full_analysis,
-        fromCache: true,
-        cachedAt: situation.scanned_at,
-      }
-      setAnalysis(fullAnalysis)
-      setAiStatus(hasEngineData(fullAnalysis) ? 'done' : 'unavailable')
-      setView('result')
-      updateLatestSnapshot(fullAnalysis)
-    },
-    [updateLatestSnapshot],
-  )
+  const handleSituationTap = useCallback((situation: SituationRow) => {
+    setError(null)
+    const fullAnalysis: Analysis = {
+      ...situation.full_analysis,
+      fromCache: true,
+      cachedAt: situation.scanned_at,
+    }
+    setAnalysis(fullAnalysis)
+    setAiStatus(hasEngineData(fullAnalysis) ? 'done' : 'unavailable')
+    setView('result')
+  }, [])
 
-  const handleViewThesis = useCallback(
-    (thesis: Thesis) => {
-      setError(null)
-      setSavedTicker(null)
-      if (thesis.analysis && hasEngineData(thesis.analysis)) {
-        setAnalysis(thesis.analysis)
-        setAiStatus('done')
-        setView('result')
+  // Watching tap: prefer live row when present (fresher data), otherwise
+  // fall back to a stub Analysis built from the snapshot. If the snapshot
+  // has no engine data either, fire /analyze fresh.
+  const handleWatchingTap = useCallback(
+    (watched: WatchedItem, liveRow: SituationRow | null) => {
+      if (liveRow) {
+        handleSituationTap(liveRow)
         return
       }
-      void handleAnalyze(thesis.ticker)
+      void handleAnalyze(watched.ticker)
     },
-    [handleAnalyze],
+    [handleAnalyze, handleSituationTap],
   )
 
   const handleBack = useCallback(() => {
     setAnalysis(null)
-    setSavedTicker(null)
     setAiStatus('idle')
-    setView('home')
+    setView('list')
   }, [])
-
-  const handleSave = useCallback(() => {
-    if (!analysis) return
-    saveThesis(analysis)
-    setSavedTicker(analysis.ticker)
-  }, [analysis, saveThesis])
 
   const handleRefresh = useCallback(async () => {
     if (!analysis || refreshing) return
@@ -173,6 +143,8 @@ export default function App() {
       setRefreshing(false)
     }
   }, [analysis, refreshing, handleAnalyze])
+
+  const watchingCount = watch.items.length
 
   return (
     <div
@@ -187,24 +159,25 @@ export default function App() {
           analysis={analysis}
           aiStatus={aiStatus}
           onBack={handleBack}
-          onSave={handleSave}
           onRefresh={analysis.fromCache ? handleRefresh : undefined}
           refreshing={refreshing}
-          saved={savedTicker === analysis.ticker}
         />
       ) : (
-        <div className="p-4 space-y-6">
-          <header className="flex items-start justify-between gap-2">
-            <div>
-              <h1 className="text-xl font-semibold" dir="ltr">
-                {t('app.title')}
-              </h1>
-              <p className="text-xs text-gray-500">{t('app.subtitle')}</p>
+        <AppShell
+          activeTab={tab}
+          onTabChange={setTab}
+          watchingCount={watchingCount}
+        >
+          {error ? (
+            <div
+              role="alert"
+              className="mb-4 text-sm p-3 rounded-xl bg-[#FCEBEB] text-[#A32D2D] border border-[#F7C1C1]"
+            >
+              {error}
             </div>
-            <LanguageToggle />
-          </header>
+          ) : null}
 
-          {discovery || discoveryLoading ? (
+          {tab === 'situations' ? (
             <DiscoveryFeed
               data={discovery ?? {
                 situations: [],
@@ -215,33 +188,15 @@ export default function App() {
               }}
               loading={discoveryLoading}
               onSituationTap={handleSituationTap}
+              onSwitchToWatching={() => setTab('watching')}
             />
-          ) : null}
-
-          <div>
-            <p className="text-[12px] text-gray-500 mb-2 text-center">
-              {t('discovery.search')}
-            </p>
-            <SearchBar onSubmit={handleAnalyze} />
-          </div>
-
-          {error ? (
-            <div
-              role="alert"
-              className="text-sm p-3 rounded-xl bg-[#FCEBEB] text-[#A32D2D] border border-[#F7C1C1]"
-            >
-              {error}
-            </div>
-          ) : null}
-
-          <ThesisList
-            theses={theses}
-            onRemove={removeThesis}
-            onView={handleViewThesis}
-            onUpdate={handleAnalyze}
-            onUpdateThesisText={updateThesisText}
-          />
-        </div>
+          ) : (
+            <WatchingPage
+              discovery={discovery}
+              onItemTap={handleWatchingTap}
+            />
+          )}
+        </AppShell>
       )}
     </div>
   )

@@ -47,13 +47,15 @@ const ENDPOINT = '/.netlify/functions/discover'
 
 export function useDiscovery(): UseDiscoveryReturn {
   const [data, setData] = useState<DiscoveryData | null>(null)
+  // Initial render is already loading=true; subsequent reloads flip it on
+  // via setLoading inside the reload callback (not the effect body) so the
+  // react-hooks/set-state-in-effect rule stays happy.
   const [loading, setLoading] = useState(true)
   // bumped to force a refetch on demand (e.g. after a manual scan).
   const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
     fetch(ENDPOINT)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -89,7 +91,10 @@ export function useDiscovery(): UseDiscoveryReturn {
     }
   }, [reloadTick])
 
-  const reload = useCallback(() => setReloadTick((n) => n + 1), [])
+  const reload = useCallback(() => {
+    setLoading(true)
+    setReloadTick((n) => n + 1)
+  }, [])
 
   return { data, loading, reload }
 }
