@@ -24,7 +24,53 @@ const QUOTE_SUMMARY_MODULES = [
   'calendarEvents',
   'assetProfile',
   'insiderTransactions',
+  'earningsHistory',
 ];
+
+// Normalize Yahoo's `earningsHistory.history` into an array of quarterly
+// reports newest-first. surprisePercent comes back as a fraction
+// (0.045 = 4.5%); convert to a percent. We keep the past 4 quarters at most
+// -- enough to show a "last earnings + recent track record" mini-table on
+// the stock-detail page without bloating the cached row.
+function extractEarningsHistory(earningsHistoryModule) {
+  const history = earningsHistoryModule?.history;
+  if (!Array.isArray(history) || history.length === 0) return null;
+  const rows = history
+    .map((h) => {
+      const period = h?.quarter;
+      const date =
+        period instanceof Date
+          ? period.toISOString()
+          : period
+            ? new Date(period).toISOString()
+            : null;
+      const epsActual = num(h?.epsActual);
+      const epsEstimate = num(h?.epsEstimate);
+      const surprisePctRaw = num(h?.surprisePercent);
+      // Yahoo's surprisePercent is occasionally already in percent form for
+      // some symbols. Detect the unusual case (|val| > 5) and pass through;
+      // otherwise multiply by 100. We *want* big surprises (e.g. 80%) to
+      // still render correctly, so we keep the cap loose.
+      const surprisePct =
+        surprisePctRaw == null
+          ? null
+          : Math.abs(surprisePctRaw) > 5
+            ? surprisePctRaw
+            : surprisePctRaw * 100;
+      const periodLabel = typeof h?.period === 'string' ? h.period : null;
+      return {
+        date,
+        period: periodLabel,
+        epsActual,
+        epsEstimate,
+        surprisePct,
+      };
+    })
+    .filter((r) => r.date && (r.epsActual != null || r.epsEstimate != null))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 4);
+  return rows.length > 0 ? rows : null;
+}
 
 // Bucket dividend payments by calendar year and return [{ year, total }] sorted
 // ascending. Yahoo's `historical` with events='dividends' returns one row per
@@ -202,6 +248,8 @@ async function fetchFundamentals(ticker) {
       : new Date(earningsDateRaw).toISOString()
     : null;
 
+  const earningsHistory = extractEarningsHistory(summary.earningsHistory);
+
   const longTermGrowthRate =
     pctFromGrowth(financial.earningsGrowth) ??
     pctFromGrowth(financial.revenueGrowth) ??
@@ -293,6 +341,7 @@ async function fetchFundamentals(ticker) {
     currentLiabilities,
     ebitda,
     earningsDate,
+    earningsHistory,
     dividendYield,
     payoutRatio,
     dividendStreak,

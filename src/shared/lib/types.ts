@@ -190,6 +190,19 @@ export interface IntrinsicValueEstimate {
   average: number | null
 }
 
+// One row of historical earnings as published. `surprisePct` is the
+// reported EPS minus the consensus estimate, expressed as a percent of
+// |estimate| (negative = miss, positive = beat). `period` is Yahoo's
+// short label like "-1q" / "-2q"; we keep it for traceability but the UI
+// renders the date.
+export interface EarningsQuarter {
+  date: string                   // ISO date the quarter was reported
+  period: string | null          // '-1q', '-2q', '-3q', '-4q' from Yahoo
+  epsActual: number | null
+  epsEstimate: number | null
+  surprisePct: number | null     // already in percent form (4.5 = 4.5%)
+}
+
 export interface Analysis {
   ticker: string
   companyName: string
@@ -207,6 +220,9 @@ export interface Analysis {
   peRatio: number | null
   fcfYield: number | null
   earningsDate: string | null
+  // Newest-first list of recent quarterly earnings (max 4). Optional --
+  // older cached analyses pre-date this field.
+  earningsHistory?: EarningsQuarter[] | null
   intrinsicValue: IntrinsicValueEstimate
   indicators: Record<string, IndicatorEntry>
   ai: AISummary | null

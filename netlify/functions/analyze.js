@@ -111,6 +111,7 @@ exports.handler = async (event) => {
       peRatio: raw.peRatio,
       fcfYield,
       earningsDate: raw.earningsDate,
+      earningsHistory: raw.earningsHistory ?? null,
       intrinsicValue,
       indicators,
       ai: null,

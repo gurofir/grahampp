@@ -165,7 +165,26 @@
     "reasons": "Full reasoning",
     "data": "Financial indicators",
     "fragility": "Fragility evidence",
-    "indicators": "Financial indicators"
+    "indicators": "Financial indicators",
+    "earnings": "Earnings",
+    "earningsSubtitle": "Last quarter result and recent track record"
+  },
+  "earnings": {
+    "lastReport": "Last reported quarter",
+    "recentQuarters": "Recent quarters",
+    "next": "Next report",
+    "actual": "Reported",
+    "estimate": "Estimate",
+    "surprise": "Surprise",
+    "quarter": "Quarter",
+    "beatRecord": "{{beat}} of the last {{total}} quarters beat estimate",
+    "noData": "No earnings data on file. Refresh the analysis to load the latest quarterly results.",
+    "sentiment": {
+      "beat": "Beat",
+      "miss": "Miss",
+      "inLine": "In line",
+      "unknown": "—"
+    }
   },
   "reality": {
     "fragility": {

@@ -681,6 +681,7 @@ async function analyzeOne({ ticker, raw, indicators, intrinsicValue, insider }, 
       peRatio: raw.peRatio,
       fcfYield,
       earningsDate: raw.earningsDate,
+      earningsHistory: raw.earningsHistory ?? null,
       intrinsicValue,
       indicators,
       // Minimal AI payload — only the About summary is generated during scan;

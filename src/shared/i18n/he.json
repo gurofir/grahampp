@@ -165,7 +165,26 @@
     "reasons": "הנימוקים המלאים",
     "data": "מדדים פיננסיים",
     "fragility": "ראיות שבריריות",
-    "indicators": "מדדים פיננסיים"
+    "indicators": "מדדים פיננסיים",
+    "earnings": "דוחות",
+    "earningsSubtitle": "תוצאת הרבעון האחרון ומה קורה לאורך זמן"
+  },
+  "earnings": {
+    "lastReport": "רבעון אחרון שדווח",
+    "recentQuarters": "רבעונים אחרונים",
+    "next": "הדוח הבא",
+    "actual": "בפועל",
+    "estimate": "הערכה",
+    "surprise": "הפתעה",
+    "quarter": "רבעון",
+    "beatRecord": "{{beat}} מתוך {{total}} הרבעונים האחרונים היכו את ההערכות",
+    "noData": "אין נתוני דוחות בזיכרון. רענן את הניתוח כדי לטעון את התוצאות העדכניות.",
+    "sentiment": {
+      "beat": "מעל ההערכה",
+      "miss": "מתחת להערכה",
+      "inLine": "תואם הערכה",
+      "unknown": "—"
+    }
   },
   "reality": {
     "fragility": {

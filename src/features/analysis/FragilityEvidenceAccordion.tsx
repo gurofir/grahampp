@@ -6,6 +6,7 @@ import type {
 } from '../../shared/lib/types'
 import Accordion, { type AccordionItemDef } from '../../shared/ui/Accordion'
 import ReasonsAccordion from './ReasonsAccordion'
+import EarningsSection from './EarningsSection'
 import { ColorStrip, IndicatorRows } from './AccordionContent'
 import { INDICATORS_BY_SECTION, SECTION_ORDER } from '../../shared/lib/format'
 
@@ -56,6 +57,20 @@ export default function FragilityEvidenceAccordion({
       body: <ReasonsAccordion graham={dual.graham} market={dual.market} />,
     },
   ]
+
+  // Earnings sits between Fragility and Indicators per Constitution screen 2:
+  // last reported quarter (EPS actual vs estimate, surprise %, sentiment chip)
+  // + 4-quarter mini track record + next earnings date when known.
+  const hasEarnings = (analysis.earningsHistory?.length ?? 0) > 0
+  const hasNextDate = !!analysis.earningsDate
+  if (hasEarnings || hasNextDate) {
+    items.push({
+      id: 'earnings',
+      title: t('accordion.earnings'),
+      subtitle: hasEarnings ? t('accordion.earningsSubtitle', '') : undefined,
+      body: <EarningsSection analysis={analysis} />,
+    })
+  }
 
   if (dataSubItems.length > 0) {
     items.push({
