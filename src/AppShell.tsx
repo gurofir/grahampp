@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import LanguageToggle from './features/home/LanguageToggle'
-import BottomTabBar, { type TabId } from './shared/ui/BottomTabBar'
+import TopTabBar, { type TabId } from './shared/ui/TopTabBar'
 
 export interface AppShellProps {
   children: ReactNode
@@ -15,8 +15,9 @@ export interface AppShellProps {
 
 // Page chrome for the constitutional UI (mockup screens 1, 3, 4).
 //
-// Sticky bottom-tab bar + scrollable body. The brand bar at top is small
-// and non-distracting per Constitution §19 (calm visual language).
+// Sticky brand row + top tab bar. Body scrolls underneath. The tab bar
+// stays visible as the user scrolls so they can switch tabs without
+// scrolling back to the top.
 export default function AppShell({
   children,
   activeTab,
@@ -28,15 +29,17 @@ export default function AppShell({
 
   return (
     <>
-      {showBrandBar ? (
-        <header
-          className="sticky top-0 z-30 bg-white"
-          style={{
-            borderBottom: '0.5px solid #ECEAE3',
-            paddingTop: 'env(safe-area-inset-top)',
-          }}
-        >
-          <div className="flex items-center justify-between gap-2 px-4 py-3">
+      <header
+        className="sticky top-0 z-30 bg-white"
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+        }}
+      >
+        {showBrandBar ? (
+          <div
+            className="flex items-center justify-between gap-2 px-4 py-3"
+            style={{ borderBottom: '0.5px solid #F4F2EC' }}
+          >
             <h1
               className="text-[15px] font-semibold tracking-tight text-gray-900"
               dir="ltr"
@@ -45,18 +48,15 @@ export default function AppShell({
             </h1>
             <LanguageToggle />
           </div>
-        </header>
-      ) : null}
+        ) : null}
+        <TopTabBar
+          active={activeTab}
+          onChange={onTabChange}
+          watchingCount={watchingCount}
+        />
+      </header>
 
-      <main className="px-4 pt-4" style={{ paddingBottom: 88 }}>
-        {children}
-      </main>
-
-      <BottomTabBar
-        active={activeTab}
-        onChange={onTabChange}
-        watchingCount={watchingCount}
-      />
+      <main className="px-4 pt-4 pb-8">{children}</main>
     </>
   )
 }

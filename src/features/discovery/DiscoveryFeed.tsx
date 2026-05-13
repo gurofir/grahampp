@@ -14,6 +14,19 @@ export interface DiscoveryFeedProps {
   loading: boolean
   onSituationTap: (situation: SituationRow) => void
   onSwitchToWatching?: () => void
+  // Called when the user hits Enter in the search box with a ticker-shaped
+  // string (e.g. "MRVL"). Treats the box as both a live filter AND a
+  // global ticker analyzer -- the same affordance from any tab.
+  onAnalyzeTicker?: (ticker: string) => void
+}
+
+// Heuristic for "looks like a ticker" -- US tickers are 1-5 letters
+// optionally followed by .XX (e.g. BRK.B, RDS.A). Allows lowercase since
+// we'll uppercase before submitting.
+const TICKER_RE = /^[A-Za-z]{1,5}(\.[A-Za-z]{1,2})?$/
+
+function looksLikeTicker(input: string): boolean {
+  return TICKER_RE.test(input.trim())
 }
 
 const DEFAULT_VISIBLE = 6
@@ -32,6 +45,7 @@ export default function DiscoveryFeed({
   loading,
   onSituationTap,
   onSwitchToWatching,
+  onAnalyzeTicker,
 }: DiscoveryFeedProps) {
   const { t } = useTranslation()
   const watch = useWatchlist()
@@ -88,6 +102,16 @@ export default function DiscoveryFeed({
 
   const lastScanText = formatLastScan(t, data.scannedAt)
 
+  // Common Enter handler for the search input -- treats input as a ticker
+  // and fires the global analyze callback when it matches the heuristic.
+  const handleSearchSubmit = () => {
+    if (!onAnalyzeTicker) return
+    const candidate = search.trim()
+    if (!candidate) return
+    if (!looksLikeTicker(candidate)) return
+    onAnalyzeTicker(candidate.toUpperCase())
+  }
+
   if (loading && situations.length === 0) {
     return (
       <div className="rounded-2xl border border-[#E0DFDB] bg-white p-4 text-[13px] text-[#7B7B79] text-center">
@@ -103,6 +127,7 @@ export default function DiscoveryFeed({
         <SearchInput
           value={search}
           onChange={setSearch}
+          onSubmit={handleSearchSubmit}
           placeholder={t('discovery.searchPlaceholder')}
         />
         <div className="rounded-2xl border border-[#E0DFDB] bg-white p-4 text-[13px] text-[#7B7B79] text-center">
@@ -119,6 +144,7 @@ export default function DiscoveryFeed({
       <SearchInput
         value={search}
         onChange={setSearch}
+        onSubmit={handleSearchSubmit}
         placeholder={t('discovery.searchPlaceholder')}
       />
 

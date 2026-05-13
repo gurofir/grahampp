@@ -332,7 +332,7 @@
     "statsExamining": "{{count}} worth examining",
     "statsWatchingActive": "{{count}} watching",
     "statsScreened": "from {{count}} screened",
-    "searchPlaceholder": "Search ticker or situation...",
+    "searchPlaceholder": "Filter or analyze ticker (Enter)...",
     "showMoreSituations": "Show {{count}} more situations",
     "allFilter": "All",
     "lastScanJustNow": "just now",
@@ -442,7 +442,7 @@
     "title": "Watching",
     "subtitleOne": "1 situation · monitoring for thesis confirmation",
     "subtitle": "{{count}} situations · monitoring for thesis confirmation",
-    "searchPlaceholder": "Search your watching list...",
+    "searchPlaceholder": "Filter or analyze ticker (Enter)...",
     "empty": {
       "title": "Nothing in your watchlist yet",
       "subtitle": "Tap + watch on a situation to start monitoring its thesis"

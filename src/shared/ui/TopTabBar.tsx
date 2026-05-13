@@ -2,47 +2,47 @@ import { useTranslation } from 'react-i18next'
 
 export type TabId = 'situations' | 'watching'
 
-export interface BottomTabBarProps {
+export interface TopTabBarProps {
   active: TabId
   onChange: (next: TabId) => void
   watchingCount?: number
 }
 
-// Sticky bottom tab bar (Situations | Watching). Mirrors the mockup's
-// minimal two-tab navigation. Watching tab shows a count bubble when > 0.
-export default function BottomTabBar({
+// Two-tab bar that lives at the top of the app shell, right under the
+// brand row. Subtle underline indicates the active tab. Constitution
+// preference: keep navigation calm and out of the thumb zone, so the
+// header is the natural home for it (mobile-first one-handed reading).
+export default function TopTabBar({
   active,
   onChange,
   watchingCount = 0,
-}: BottomTabBarProps) {
+}: TopTabBarProps) {
   const { t } = useTranslation()
   return (
-    <nav
-      className="fixed bottom-0 inset-x-0 mx-auto max-w-sm bg-white"
+    <div
+      className="bg-white"
       style={{
-        borderTop: '0.5px solid #E0DFDB',
-        zIndex: 40,
-        paddingBottom: 'env(safe-area-inset-bottom)',
+        borderBottom: '0.5px solid #ECEAE3',
       }}
     >
-      <div className="flex items-stretch">
-        <TabButton
+      <div className="flex items-stretch gap-6 px-4">
+        <Tab
           active={active === 'situations'}
           label={t('tabs.situations')}
           onClick={() => onChange('situations')}
         />
-        <TabButton
+        <Tab
           active={active === 'watching'}
           label={t('tabs.watching')}
           badge={watchingCount > 0 ? watchingCount : undefined}
           onClick={() => onChange('watching')}
         />
       </div>
-    </nav>
+    </div>
   )
 }
 
-function TabButton({
+function Tab({
   active,
   label,
   badge,
@@ -58,14 +58,14 @@ function TabButton({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="flex-1 flex items-center justify-center gap-1.5"
+      className="flex items-center gap-1.5"
       style={{
-        padding: '12px 0 14px',
-        fontSize: 12,
+        padding: '10px 0 12px',
+        fontSize: 13,
         fontWeight: active ? 600 : 400,
         color: active ? '#1F2937' : '#7B7B79',
-        borderTop: active ? '2px solid #1F2937' : '2px solid transparent',
-        marginTop: '-0.5px',
+        borderBottom: active ? '2px solid #1F2937' : '2px solid transparent',
+        marginBottom: '-0.5px',
         cursor: 'pointer',
         backgroundColor: 'transparent',
         textTransform: 'lowercase',

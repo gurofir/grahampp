@@ -332,7 +332,7 @@
     "statsExamining": "{{count}} שווים בחינה",
     "statsWatchingActive": "{{count}} במעקב",
     "statsScreened": "מתוך {{count}} שנסרקו",
-    "searchPlaceholder": "חפש טיקר או סיטואציה...",
+    "searchPlaceholder": "סנן או נתח טיקר (Enter)...",
     "showMoreSituations": "הצג עוד {{count}} סיטואציות",
     "allFilter": "הכל",
     "lastScanJustNow": "כרגע",
@@ -442,7 +442,7 @@
     "title": "מעקב",
     "subtitleOne": "סיטואציה אחת · מעקב אחר אישור תזה",
     "subtitle": "{{count}} סיטואציות · מעקב אחר אישור תזה",
-    "searchPlaceholder": "חפש ברשימת המעקב...",
+    "searchPlaceholder": "סנן או נתח טיקר (Enter)...",
     "empty": {
       "title": "אין כלום ברשימת המעקב עדיין",
       "subtitle": "הקש + מעקב על סיטואציה כדי להתחיל לעקוב אחר התזה"

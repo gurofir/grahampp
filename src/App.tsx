@@ -7,7 +7,7 @@ import DiscoveryFeed from './features/discovery/DiscoveryFeed'
 import WatchingPage from './features/watching/WatchingPage'
 import AppShell from './AppShell'
 import type { Analysis, WatchedItem } from './shared/lib/types'
-import type { TabId } from './shared/ui/BottomTabBar'
+import type { TabId } from './shared/ui/TopTabBar'
 import { useWatchlist } from './shared/hooks/useWatchlist'
 
 type View = 'list' | 'loading' | 'result'
@@ -189,11 +189,13 @@ export default function App() {
               loading={discoveryLoading}
               onSituationTap={handleSituationTap}
               onSwitchToWatching={() => setTab('watching')}
+              onAnalyzeTicker={(t) => handleAnalyze(t)}
             />
           ) : (
             <WatchingPage
               discovery={discovery}
               onItemTap={handleWatchingTap}
+              onAnalyzeTicker={(t) => handleAnalyze(t)}
             />
           )}
         </AppShell>

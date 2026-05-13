@@ -14,6 +14,15 @@ export interface WatchingPageProps {
   // snapshot and the latest live row (when present) so the caller can
   // decide whether to render from cache or fetch fresh.
   onItemTap: (watched: WatchedItem, liveRow: SituationRow | null) => void
+  // Called when the user hits Enter in the search box with a ticker-shaped
+  // string. Lets the user analyze any ticker without leaving the Watching
+  // tab -- adds the same global search affordance the Situations tab has.
+  onAnalyzeTicker?: (ticker: string) => void
+}
+
+const TICKER_RE = /^[A-Za-z]{1,5}(\.[A-Za-z]{1,2})?$/
+function looksLikeTicker(input: string): boolean {
+  return TICKER_RE.test(input.trim())
 }
 
 // Constitutional Watching dashboard (Constitution §14, mockup screen 4).
@@ -29,6 +38,7 @@ export interface WatchingPageProps {
 export default function WatchingPage({
   discovery,
   onItemTap,
+  onAnalyzeTicker,
 }: WatchingPageProps) {
   const { t } = useTranslation()
   const watch = useWatchlist()
@@ -41,10 +51,26 @@ export default function WatchingPage({
     search,
   )
 
+  // Same Enter-to-analyze affordance as the Situations tab. Users can
+  // search any ticker from anywhere, not just from the Discovery feed.
+  const handleSearchSubmit = () => {
+    if (!onAnalyzeTicker) return
+    const candidate = search.trim()
+    if (!candidate) return
+    if (!looksLikeTicker(candidate)) return
+    onAnalyzeTicker(candidate.toUpperCase())
+  }
+
   if (watch.items.length === 0) {
     return (
       <div className="space-y-4">
         <Header count={0} />
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          onSubmit={handleSearchSubmit}
+          placeholder={t('watching.searchPlaceholder')}
+        />
         <div className="rounded-2xl border border-[#E0DFDB] bg-white p-6 text-center space-y-1.5">
           <div className="text-[14px] font-semibold text-gray-900">
             {t('watching.empty.title')}
@@ -64,6 +90,7 @@ export default function WatchingPage({
       <SearchInput
         value={search}
         onChange={setSearch}
+        onSubmit={handleSearchSubmit}
         placeholder={t('watching.searchPlaceholder')}
       />
 
