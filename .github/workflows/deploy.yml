@@ -63,10 +63,24 @@ jobs:
         run: npm run build
 
       - name: Deploy to Netlify (production)
+        # Pass the commit subject (first line only) via env var, NOT inline
+        # interpolation. Earlier runs used `--message "${{ github.event...
+        # }}"` directly, which broke whenever the commit message contained
+        # newlines, quotes, or shell metacharacters from heredoc commit
+        # bodies -- the shell would mis-tokenize and the deploy step would
+        # exit non-zero with no useful error. Reading from $DEPLOY_MSG via
+        # env keeps the value opaque to the shell parser.
+        env:
+          DEPLOY_MSG: 'GitHub Actions: ${{ github.event.head_commit.message }}'
         run: |
+          # Take only the first line of the commit message; Netlify only
+          # shows the subject in the deploys list anyway and a multi-line
+          # value occasionally trips the CLI's argument parser.
+          MSG=$(printf '%s' "$DEPLOY_MSG" | head -n1)
           npx --yes netlify-cli@latest deploy \
             --prod \
             --dir=dist \
             --functions=netlify/functions \
             --skip-functions-cache \
-            --message "GitHub Actions: ${{ github.event.head_commit.message }}"
+            --site="$NETLIFY_SITE_ID" \
+            --message "$MSG"
