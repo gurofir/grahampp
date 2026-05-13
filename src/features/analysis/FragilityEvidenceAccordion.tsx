@@ -61,16 +61,18 @@ export default function FragilityEvidenceAccordion({
   // Earnings sits between Fragility and Indicators per Constitution screen 2:
   // last reported quarter (EPS actual vs estimate, surprise %, sentiment chip)
   // + 4-quarter mini track record + next earnings date when known.
+  //
+  // Always rendered. When the cached row pre-dates the earningsHistory
+  // field (or Yahoo returned no calendar date), the body shows a calm
+  // "Refresh to load latest quarterly results" message instead of being
+  // hidden -- so the user can always discover that the data is available.
   const hasEarnings = (analysis.earningsHistory?.length ?? 0) > 0
-  const hasNextDate = !!analysis.earningsDate
-  if (hasEarnings || hasNextDate) {
-    items.push({
-      id: 'earnings',
-      title: t('accordion.earnings'),
-      subtitle: hasEarnings ? t('accordion.earningsSubtitle', '') : undefined,
-      body: <EarningsSection analysis={analysis} />,
-    })
-  }
+  items.push({
+    id: 'earnings',
+    title: t('accordion.earnings'),
+    subtitle: hasEarnings ? t('accordion.earningsSubtitle', '') : undefined,
+    body: <EarningsSection analysis={analysis} />,
+  })
 
   if (dataSubItems.length > 0) {
     items.push({
