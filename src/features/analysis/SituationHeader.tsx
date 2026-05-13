@@ -37,6 +37,25 @@ export default function SituationHeader({
         : '#A32D2D'
       : '#5F5E5A'
 
+  // Position of currentPrice within the 52w range, 0..100. Null when any
+  // input is missing or the band collapses (low >= high).
+  const rangePct: number | null = (() => {
+    const { currentPrice, low52, high52 } = analysis
+    if (
+      typeof currentPrice !== 'number' ||
+      typeof low52 !== 'number' ||
+      typeof high52 !== 'number' ||
+      !Number.isFinite(currentPrice) ||
+      !Number.isFinite(low52) ||
+      !Number.isFinite(high52) ||
+      high52 <= low52
+    ) {
+      return null
+    }
+    const raw = ((currentPrice - low52) / (high52 - low52)) * 100
+    return Math.min(100, Math.max(0, raw))
+  })()
+
   return (
     <header className="space-y-4">
       <button
@@ -103,6 +122,15 @@ export default function SituationHeader({
         </div>
       </div>
 
+      {rangePct !== null ? (
+        <Range52w
+          symbol={sym}
+          low52={analysis.low52 as number}
+          high52={analysis.high52 as number}
+          rangePct={rangePct}
+        />
+      ) : null}
+
       <h1
         className="text-[18px] font-semibold text-gray-900 leading-snug"
         dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
@@ -112,5 +140,64 @@ export default function SituationHeader({
 
       <SentimentSpectrum sentiment={sentiment} />
     </header>
+  )
+}
+
+// Slim 52-week price-range bar. Shows a horizontal track between the
+// 52w low and high with a dot at the current price, plus the labelled
+// endpoints. Helps anchor "where in the band is this stock?" -- a key
+// piece of context the constitutional UI was missing.
+function Range52w({
+  symbol,
+  low52,
+  high52,
+  rangePct,
+}: {
+  symbol: string
+  low52: number
+  high52: number
+  rangePct: number
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="space-y-1.5" dir="ltr">
+      <div
+        className="text-[10px] uppercase tracking-wider"
+        style={{ color: '#9A9A95' }}
+        dir="auto"
+      >
+        {t('header.range52w')}
+      </div>
+      <div
+        className="relative"
+        style={{ height: 4, backgroundColor: '#ECEAE3', borderRadius: 2 }}
+      >
+        <div
+          aria-hidden
+          className="absolute"
+          style={{
+            top: '50%',
+            left: `${rangePct}%`,
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            backgroundColor: '#1F2937',
+            border: '2px solid #FFFFFF',
+            boxShadow: '0 0 0 1px #ECEAE3',
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      </div>
+      <div className="flex justify-between tabular-nums">
+        <span className="text-[11px] text-[#7B7B79]">
+          {symbol}
+          {low52.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+        </span>
+        <span className="text-[11px] text-[#7B7B79]">
+          {symbol}
+          {high52.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+        </span>
+      </div>
+    </div>
   )
 }
